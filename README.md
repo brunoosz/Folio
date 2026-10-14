@@ -27,8 +27,12 @@ O Folio **não diagnostica, não prescreve e não substitui profissionais**. Ele
 - **Fichas** — crie e edite fichas, use **modelos prontos** (corpo inteiro, AB, ABC) ou peça uma **sugestão à IA** com base no seu perfil.
 - **Troca de exercício** — mostra as diferenças biomecânicas, avisa quando a troca **não é equivalente**, filtra por equipamento e por **proteção articular** (pré-selecionada pelas lesões do perfil) e traz uma sugestão **consultiva** da IA.
 - **Mapa muscular** — boneco musculoso 2D (frente e costas) com **sub-regiões**: peito superior, médio e inferior, porções do deltoide, cabeças do bíceps e do tríceps, glúteos, quadríceps e mais. Cerca de 70 exercícios no catálogo, filtráveis por parte do músculo e equipamento.
-- **Rotina** — **água** pela sua garrafa (ml, com garrafa padrão e "só hoje"), **sono** com horário de dormir e acordar, despertares e qualidade (o app avisa no dia seguinte se a noite foi curta), hábitos e **minha rotina** com horários e tarefas, que aparece na tela inicial e dá contexto à IA.
-- **Nutrição** — cadastre o plano da sua nutricionista (cole o texto e o app organiza), converse com a IA para montar uma rotina alimentar ou trocar alimentos pelo que você tem em casa, e use a tabela de **trocas** que funciona offline.
+- **Rotina** — **água** pela sua garrafa (ml, com garrafa padrão e "só hoje"), **sono** com horário de dormir e acordar, despertares e qualidade (o app avisa no dia seguinte se a noite foi curta), hábitos e **minha rotina** com horários e tarefas, que aparece na tela inicial e dá contexto à IA. Tudo é **personalizável**: ligue/desligue cartões, remova hábitos (ex.: alongamento) ou crie os seus.
+- **Remédios** — cadastre os remédios que você já usa, com dose, horários e dias; na Rotina, cada horário vira um botão para marcar se tomou. O Folio só lembra — não indica nem ajusta dose.
+- **Lembretes** — notificações para beber água, hora de dormir, remédios e treino. No Android chegam com o app fechado; no PC, o Folio fica na bandeja do Windows para continuar lembrando.
+- **Nutrição** — cadastre o plano da sua nutricionista (cole o texto e o app organiza), veja cada refeição como um **prato ilustrado** (círculo dividido por grupos alimentares, com ícones e nomes), registre **o que você comeu** no diário e compare com o plano (por grupos e com análise da IA), converse com a IA e use a tabela de **trocas** offline.
+- **Exames** — cadastre exames de **sangue, urina, fezes, imagem** e outros: cole o texto do laudo ou importe o PDF e o Folio reconhece os resultados, compara com as faixas de referência (as do laudo têm prioridade), mostra a evolução entre exames e gera uma **leitura educativa** com a IA — sem diagnóstico, sempre recomendando o médico.
+- **Base de conhecimento da IA** — a dona/o dono adiciona **artigos científicos, livros e apostilas (PDF), transcrições de vídeos, sites e anotações**. O conteúdo é dividido em trechos e guardado no aparelho; a cada pergunta, os trechos mais relevantes vão junto para a IA, que responde citando a fonte (RAG — o modelo não é re-treinado).
 - **Histórico** — sessões anteriores, volume e evolução por exercício.
 - **Assistente IA (Groq)** — respostas em pt-BR com **citações** da biblioteca científica e contexto do seu perfil e rotina, configurável pela dona/pelo dono do app.
 - **Biblioteca científica** — referências organizadas por tema, com resumos e links para as fontes.
@@ -90,11 +94,15 @@ src/
     ui/               componentes base (Button, Card, Sheet, Toast, ...)
     illustrations/    ilustrações em traço de uma cor
     Splash/           animação de abertura
-  pages/              telas (Home, Treino, Troca, Mapa, Rotina, Histórico,
-                      Assistente, Biblioteca, Admin, Configurações, Perfil, Login)
-  hooks/              stores Zustand (auth, treino, rotina, histórico, home, configurações)
-  lib/                cliente da API da Groq e busca de referências
-  data/               tipos, seed, repositório mock, conteúdo científico
+  pages/              telas (Home, Treino, Troca, Mapa, Rotina, Nutrição, Exames,
+                      Histórico, Assistente, Biblioteca, Conhecimento, Admin,
+                      Configurações, Perfil, Login)
+  hooks/              stores Zustand (auth, treino, rotina, nutrição, exames,
+                      remédios, lembretes, conhecimento, configurações, ...)
+  lib/                cliente da Groq, RAG (conhecimento), exames, alimentos,
+                      lembretes, leitura de PDF, progressão
+  data/               tipos, catálogo, referências de exames, repositório mock,
+                      conteúdo científico
   styles.css          tokens visuais e animações
 public/               ícones, favicon e logo (PWA)
 build/                ícone do instalador Windows
@@ -174,8 +182,8 @@ O plano completo está em [`ROADMAP.md`](ROADMAP.md) e as decisões técnicas em
 
 - **Supabase** com autenticação real e RLS, substituindo o armazenamento local
 - Chave da Groq no servidor (Edge Function)
-- Assistente com RAG sobre a biblioteca científica
-- Mapa muscular 3D e modo escuro
+- Base de conhecimento com embeddings (pgvector) e sincronização entre aparelhos
+- Mapa muscular 3D
 - Builds assinados (APK de release e instalador Windows)
 
 ## Ética e saúde
@@ -183,6 +191,8 @@ O plano completo está em [`ROADMAP.md`](ROADMAP.md) e as decisões técnicas em
 - O Folio é uma ferramenta de **organização e educação**. Não faz diagnóstico, não prescreve treino, dieta ou medicação e não incentiva práticas lesivas.
 - Conteúdos de exercícios e comparativos biomecânicos são informativos e estão marcados **"a revisar por profissional"**.
 - Sente dor, desconforto ou tem alguma condição de saúde? Procure um médico ou um profissional de Educação Física.
+- A leitura de **exames** é educativa: faixas de referência variam entre laboratórios e só o médico interpreta junto com o seu histórico.
+- **Remédios**: o app apenas lembra os horários que você cadastrou. Dúvidas sobre dose, horário ou interações: médico ou farmacêutico.
 - As respostas da IA podem conter erros; confira sempre as fontes citadas.
 
 ## Licença

@@ -6,6 +6,8 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { usePerfilStore } from '../hooks/usePerfilStore';
 import { useAguaSonoStore } from '../hooks/useAguaSonoStore';
+import { useExamesStore } from '../hooks/useExamesStore';
+import { useMedicamentosStore } from '../hooks/useMedicamentosStore';
 import { hojeLocal } from '../data/date';
 import { Icon, type IconProps } from '../components/ui/Icon';
 import { Pill } from '../components/ui/Pill';
@@ -242,6 +244,8 @@ export function Configuracoes() {
     usePerfilStore.getState().atualizar({ alturaCm: null, pesoKg: null, sexo: null, idade: null, lesoes: [] });
     setConsentimento(false);
     useAguaSonoStore.setState({ agua: [], sono: [] });
+    useExamesStore.setState({ exames: [] });
+    useMedicamentosStore.setState({ medicamentos: [], tomadas: [] });
     toast.success('Dados de saúde apagados e consentimento retirado');
   };
 
@@ -319,7 +323,7 @@ export function Configuracoes() {
 
       <Sheet open={revogarOpen} onClose={() => setRevogarOpen(false)} title="Retirar consentimento?" variant="modal">
         <p className="text-[14px] text-ink-body leading-snug">
-          Peso, altura, idade, sexo, lesões e os registros de água e sono serão apagados deste aparelho. Treinos e rotina continuam.
+          Peso, altura, idade, sexo, lesões, registros de água e sono, exames e remédios serão apagados deste aparelho. Treinos e rotina continuam.
         </p>
         <div className="flex flex-wrap justify-end gap-2 mt-5">
           <Button variant="text" onClick={() => setRevogarOpen(false)}>Cancelar</Button>

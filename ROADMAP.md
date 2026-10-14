@@ -23,11 +23,17 @@
    - Troca com proteção articular e sugestão da IA; editor do catálogo no admin
    - Tema escuro, exportação de dados e fontes embutidas
 
+9. ~~Fase 8: Saúde completa e IA com materiais próprios (v1.0.2)~~
+   - Nutrição: prato ilustrado por refeição, diário do que foi comido e comparação com o plano (local + IA)
+   - Exames de sangue, urina, fezes e imagem: leitura de laudo (texto/PDF), faixas de referência, evolução e leitura da IA
+   - Remédios com horários e marcação de doses na Rotina; Rotina personalizável
+   - Base de conhecimento do dono (artigos, livros, apostilas, vídeos, anotações) com RAG e citações
+   - Lembretes de água, sono, remédios e treino (Android nativo; PC na bandeja)
+
 ## Próximas fases
-9. Fase 8: Supabase real + autenticação + RLS (substitui o mock em `repository.ts`)
-10. Fase 9: Chave da Groq em Edge Function do Supabase (sai do dispositivo)
-11. Fase 10: Assistente IA com RAG e citações sobre a biblioteca
-12. Fase 11: Ingestão de PDFs e busca semântica
+10. Fase 9: Supabase real + autenticação + RLS (substitui o armazenamento local)
+11. Fase 10: Chave da Groq em Edge Function do Supabase (sai do dispositivo)
+12. Fase 11: Embeddings (pgvector) para a base de conhecimento e OCR de laudos escaneados
 13. Fase 12: Mapa muscular 3D
-14. Fase 13: Gamificação e notificações
+14. Fase 13: Gamificação
 15. Fase 14: APK assinado (release) e instalador Windows com assinatura de código

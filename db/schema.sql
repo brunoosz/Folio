@@ -190,6 +190,105 @@ create table refeicao_plano (
   profissional text
 );
 
+create table refeicao_registro (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references usuario(id) on delete cascade,
+  data date not null,
+  hora time not null,
+  refeicao_plano_id uuid references refeicao_plano(id) on delete set null, -- null = fora do plano
+  nome text not null,
+  itens text[] not null default '{}',
+  analise text,
+  analise_origem text check (analise_origem in ('ia','offline'))
+);
+
+/* ---------------- Remédios ---------------- */
+
+create table medicamento (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references usuario(id) on delete cascade,
+  nome text not null,
+  dose text,                    -- texto livre, como na receita
+  horarios time[] not null default '{}',
+  dias int[] default '{}',      -- vazio = todos os dias
+  obs text,
+  ativo boolean default true
+);
+
+create table medicamento_tomada (
+  medicamento_id uuid references medicamento(id) on delete cascade,
+  data date not null,
+  hora time not null,           -- horário previsto da dose
+  tomado_em timestamptz default now(),
+  primary key (medicamento_id, data, hora)
+);
+
+/* ---------------- Exames ---------------- */
+
+create table exame (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references usuario(id) on delete cascade,
+  data date not null,
+  tipo text not null check (tipo in ('sangue','urina','fezes','imagem','outro')),
+  titulo text not null,
+  laboratorio text,
+  notas text,                   -- laudo textual (imagem) e observações
+  analise text,
+  analise_origem text check (analise_origem in ('ia','offline')),
+  analise_em timestamptz,
+  created_at timestamptz default now()
+);
+
+create table exame_resultado (
+  id uuid primary key default gen_random_uuid(),
+  exame_id uuid references exame(id) on delete cascade,
+  analito_id text,              -- id do catálogo (ex.: "hemoglobina"), quando reconhecido
+  nome text not null,
+  valor numeric,                -- null quando textual
+  valor_texto text,             -- ex.: "Negativo"
+  unidade text,
+  ref_min numeric,
+  ref_max numeric,
+  ref_texto text
+);
+
+/* ---------------- Lembretes ---------------- */
+
+create table lembrete_config (
+  user_id uuid primary key references usuario(id) on delete cascade,
+  ativo boolean default false,
+  agua jsonb default '{"ativo":true,"intervaloMin":120,"inicio":"08:00","fim":"21:00"}',
+  dormir jsonb default '{"ativo":true,"hora":"22:30"}',
+  remedios jsonb default '{"ativo":true}',
+  treino jsonb default '{"ativo":false,"hora":"18:00","dias":[1,2,3,4,5]}'
+);
+
+/* ---------------- Base de conhecimento da IA (RAG) ---------------- */
+-- Materiais do dono do app. Com pgvector, cada trecho ganha um embedding para busca semântica.
+-- create extension if not exists vector;
+
+create table conhecimento_doc (
+  id uuid primary key default gen_random_uuid(),
+  criado_por uuid references usuario(id) on delete cascade,
+  tipo text not null check (tipo in ('artigo','livro','apostila','video','site','nota')),
+  titulo text not null,
+  autor text,
+  ano text,
+  url text,
+  tags text[] default '{}',
+  ativo boolean default true,
+  created_at timestamptz default now()
+);
+
+create table conhecimento_trecho (
+  id uuid primary key default gen_random_uuid(),
+  doc_id uuid references conhecimento_doc(id) on delete cascade,
+  idx int not null,
+  texto text not null
+  -- , embedding vector(1024)
+);
+create index on conhecimento_trecho (doc_id, idx);
+
 /* ---------------- RLS (rascunho) ---------------- */
 alter table perfil_fisico enable row level security;
 alter table ficha_modelo enable row level security;
@@ -203,11 +302,21 @@ alter table habito_registro enable row level security;
 alter table rotina_atividade enable row level security;
 alter table preferencia_usuario enable row level security;
 alter table refeicao_plano enable row level security;
+alter table refeicao_registro enable row level security;
+alter table medicamento enable row level security;
+alter table medicamento_tomada enable row level security;
+alter table exame enable row level security;
+alter table exame_resultado enable row level security;
+alter table lembrete_config enable row level security;
+alter table conhecimento_doc enable row level security;
+alter table conhecimento_trecho enable row level security;
 
 -- Política: usuário vê apenas seus dados
 -- create policy "user_own" on perfil_fisico for all using (user_id = auth.uid());
 -- (aplicar padrão similar em todas as tabelas com user_id; itens/séries via join com o pai)
 
 -- Admin NÃO tem acesso a tabelas pessoais.
--- Admin acessa apenas: grupo_muscular, musculo, exercicio, exercicio_musculo.
+-- Admin acessa apenas: grupo_muscular, musculo, exercicio, exercicio_musculo
+-- e a base de conhecimento (conhecimento_doc / conhecimento_trecho), que é usada pela IA de todos.
+-- Exames e remédios são dados sensíveis de saúde (LGPD): somente o próprio usuário.
 -- A chave da IA deve migrar para uma Edge Function (nunca ficar no cliente).

@@ -33,3 +33,13 @@
 16. **Tema escuro por tokens**: cores fixas viraram tokens semânticos (`tint-*`, `ok`, `warn-ink`, `map-*`) com valores para claro e escuro em `styles.css`. O tema é aplicado antes da primeira pintura por um script em `index.html`.
 
 17. **Rotas secundárias sob demanda**: telas menos usadas são carregadas com `React.lazy`, mantendo o pacote inicial menor (o PWA continua pré-carregando tudo para uso offline).
+
+18. **Prato por refeição sem tabela nutricional**: os itens do plano são classificados por palavras-chave em grupos alimentares (`lib/alimentos.ts`) e desenhados como um círculo de cores claras com ícones. A comparação com o que foi comido é por grupos, não por calorias — leve, offline e sem "contar calorias".
+
+19. **Exames com referência do laudo em primeiro lugar**: o catálogo (`data/exames.ts`) traz faixas gerais para adultos, usadas só quando o laudo não informa a faixa e a unidade é compatível. A leitura do laudo é local (regex sobre o texto ou o PDF via pdf.js, carregado sob demanda); a IA pode organizar laudos bagunçados e gera uma leitura educativa, nunca diagnóstico.
+
+20. **Base de conhecimento = RAG local**: materiais ficam no IndexedDB, divididos em trechos de ~1.000 caracteres; a busca é BM25 simplificada com o mesmo tokenizador da biblioteca. Os trechos mais relevantes entram no prompt com citação. Não há fine-tuning. Com o Supabase, os trechos ganham embeddings (pgvector) e sincronização.
+
+21. **Lembretes por plataforma**: Android usa `@capacitor/local-notifications` (agendamento repetido no sistema, funciona com o app fechado); PC e web usam a API de Notificações com um agendador interno, que pula lembretes já resolvidos (meta de água batida, remédio marcado). No Windows, fechar a janela mantém o Folio na bandeja.
+
+22. **Remédios só como lembrete**: o app registra o que a pessoa já usa (nome, dose como na receita, horários) e marca as doses tomadas. Não sugere, não ajusta e não calcula dose.
