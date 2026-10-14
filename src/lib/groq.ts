@@ -209,11 +209,15 @@ export interface AskContext {
   exerciciosHoje?: string[];
   /** Perfil, rotina, sono e água do usuário (texto já resumido). */
   usuario?: string;
+  /** Trechos da base de conhecimento do dono (artigos, livros, vídeos…). */
+  materiais?: { ref: string; texto: string }[];
 }
 
 export interface AskResult {
   texto: string;
   artigos: string[];
+  /** Referências dos materiais próprios usados, na ordem [n] após os artigos. */
+  materiais: string[];
 }
 
 export async function askAssistant(
@@ -225,8 +229,13 @@ export async function askAssistant(
   signal?: AbortSignal,
 ): Promise<AskResult> {
   const fontes = rankArtigos(pergunta, 3);
-  const contexto = fontes.length
-    ? fontes.map((a, i) => `[${i + 1}] ${a.titulo} — ${a.fonte} (${a.ano}). ${a.resumo}`).join('\n')
+  const materiais = ctx.materiais ?? [];
+  const linhas = [
+    ...fontes.map((a, i) => `[${i + 1}] ${a.titulo} — ${a.fonte} (${a.ano}). ${a.resumo}`),
+    ...materiais.map((m, i) => `[${fontes.length + i + 1}] ${m.ref} (material do usuário): "${m.texto.slice(0, 900)}"`),
+  ];
+  const contexto = linhas.length
+    ? linhas.join('\n')
     : 'Nenhum artigo da biblioteca do Folio é relevante para esta pergunta. Responda com cautela e informe que a biblioteca não tem referências sobre o tema.';
 
   const partesUsuario = [
@@ -245,7 +254,7 @@ export async function askAssistant(
 
   const texto = await groqChat(key, model, messages, { signal });
   // Mantém a ordem fornecida para que [n] no texto corresponda ao n-ésimo item de Referências.
-  return { texto, artigos: fontes.map(a => a.id) };
+  return { texto, artigos: fontes.map(a => a.id), materiais: materiais.map(m => m.ref) };
 }
 
 /* ---------------- Sugestão de ficha ---------------- */
@@ -347,9 +356,10 @@ Regras inegociáveis:
 
 export async function askNutri(
   key: string, model: string, history: { role: 'user' | 'assistant'; content: string }[], pergunta: string,
-  contexto: { usuario?: string; plano?: string }, signal?: AbortSignal,
+  contexto: { usuario?: string; plano?: string; materiais?: string }, signal?: AbortSignal,
 ): Promise<string> {
   const ctx = [
+    contexto.materiais ? `Trechos de materiais de referência do usuário (use se forem relevantes e cite o título):\n${contexto.materiais}` : '',
     contexto.usuario ? `Contexto do usuário: ${contexto.usuario}.` : '',
     contexto.plano ? `Plano alimentar cadastrado pelo usuário:\n${contexto.plano}` : 'O usuário ainda não cadastrou um plano alimentar.',
   ].filter(Boolean).join('\n\n');

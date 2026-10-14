@@ -10,6 +10,7 @@ import { repo } from '../data/repository';
 import { useAuthStore } from '../hooks/useAuthStore';
 import { useSettingsStore } from '../hooks/useSettingsStore';
 import { useTreinoStore } from '../hooks/useTreinoStore';
+import { buscarConhecimento, referenciaDoc } from '../lib/conhecimento';
 import { askAssistant, GroqError, matchRespostaMock, RESPOSTA_PADRAO } from '../lib/groq';
 import { contextoUsuario } from '../lib/contexto';
 
@@ -17,7 +18,7 @@ type Origem = 'ia' | 'demo' | 'fallback';
 
 type Mensagem =
   | { id: string; tipo: 'user'; texto: string }
-  | { id: string; tipo: 'ia'; texto: string; artigos: string[]; origem: Origem }
+  | { id: string; tipo: 'ia'; texto: string; artigos: string[]; materiais?: string[]; origem: Origem }
   | { id: string; tipo: 'erro'; texto: string; pergunta: string };
 
 const SS_KEY = 'folio_chat';
@@ -114,9 +115,9 @@ function AssistantAvatar() {
   );
 }
 
-function Referencias({ ids }: { ids: string[] }) {
+function Referencias({ ids, materiais = [] }: { ids: string[]; materiais?: string[] }) {
   const lista = ids.map(id => artigos.find(a => a.id === id)).filter(Boolean) as typeof artigos;
-  if (!lista.length) return null;
+  if (!lista.length && !materiais.length) return null;
   return (
     <div className="mt-3 pt-3 border-t border-black/[0.06] flex flex-col gap-2">
       <span className="text-[12px] text-ink-muted font-semibold uppercase tracking-wide">Referências</span>
@@ -128,6 +129,12 @@ function Referencias({ ids }: { ids: string[] }) {
               <span className="text-ink">{a.titulo}.</span>{' '}
               <span className="italic">{a.fonte}</span>, {a.ano}.
             </span>
+          </li>
+        ))}
+        {materiais.map((m, i) => (
+          <li key={m} className="text-[13px] text-ink-body leading-snug flex gap-1.5" style={{ fontFamily: 'var(--font-serif)' }}>
+            <span className="text-science font-semibold tabular">[{lista.length + i + 1}]</span>
+            <span><span className="text-ink">{m}.</span> <span className="italic">Seus materiais</span>.</span>
           </li>
         ))}
       </ol>
@@ -183,6 +190,15 @@ export function Assistente() {
         await new Promise(r => setTimeout(r, 650));
         if (!atual()) return;
         const m = mockResposta(pergunta);
+        if (m.texto === RESPOSTA_PADRAO) {
+          // Sem IA: mostra o trecho mais parecido dos materiais do dono, se houver.
+          const achados = await buscarConhecimento(pergunta, 2);
+          if (achados.length && atual()) {
+            const texto = `Encontrei isto nos seus materiais:\n\n${achados.map((a, i) => `[${i + 1}] "${a.trecho.texto.slice(0, 420).trim()}…"`).join('\n\n')}`;
+            setMensagens(prev => [...prev, { id: uid(), tipo: 'ia', texto, artigos: [], materiais: achados.map(a => referenciaDoc(a.doc)), origem: 'demo' }]);
+            return;
+          }
+        }
         setMensagens(prev => [...prev, { id: uid(), tipo: 'ia', texto: m.texto, artigos: m.artigos, origem: 'demo' }]);
         return;
       }
@@ -192,10 +208,12 @@ export function Assistente() {
         .filter((m): m is Exclude<Mensagem, { tipo: 'erro' }> => m.tipo !== 'erro')
         .filter(m => m.tipo === 'user' || m.origem === 'ia')
         .map(m => ({ role: m.tipo === 'user' ? ('user' as const) : ('assistant' as const), content: m.texto }));
-      const res = await askAssistant(groqApiKey, groqModel, history, pergunta, { exerciciosHoje, usuario: contextoUsuario() }, ctrl.signal);
+      const achados = await buscarConhecimento(pergunta, 3);
+      const materiais = achados.map(a => ({ ref: referenciaDoc(a.doc), texto: a.trecho.texto }));
+      const res = await askAssistant(groqApiKey, groqModel, history, pergunta, { exerciciosHoje, usuario: contextoUsuario(), materiais }, ctrl.signal);
       if (ctrl.signal.aborted || !atual()) return;
       setAiError(null);
-      setMensagens(prev => [...prev, { id: uid(), tipo: 'ia', texto: res.texto, artigos: res.artigos, origem: 'ia' }]);
+      setMensagens(prev => [...prev, { id: uid(), tipo: 'ia', texto: res.texto, artigos: res.artigos, materiais: res.materiais, origem: 'ia' }]);
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return;
       if (!atual()) return;
@@ -343,7 +361,7 @@ export function Assistente() {
                 <div className="text-[15px] text-ink-body leading-relaxed break-words">
                   <RichText text={m.texto} />
                 </div>
-                <Referencias ids={m.artigos} />
+                <Referencias ids={m.artigos} materiais={m.materiais} />
               </div>
             </div>
           );

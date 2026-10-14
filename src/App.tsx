@@ -25,6 +25,7 @@ const Nutricao = lazy(() => import('./pages/Nutricao').then(m => ({ default: m.N
 const PerfilDados = lazy(() => import('./pages/PerfilDados').then(m => ({ default: m.PerfilDados })));
 const Exames = lazy(() => import('./pages/Exames').then(m => ({ default: m.Exames })));
 const ExameDetalhe = lazy(() => import('./pages/Exames').then(m => ({ default: m.ExameDetalhe })));
+const Conhecimento = lazy(() => import('./pages/Conhecimento').then(m => ({ default: m.Conhecimento })));
 const Fichas = lazy(() => import('./pages/Fichas').then(m => ({ default: m.Fichas })));
 const FichaEditor = lazy(() => import('./pages/Fichas').then(m => ({ default: m.FichaEditor })));
 
@@ -74,6 +75,7 @@ function Shell() {
           <Route path="/admin" element={<Admin />} />
           <Route path="/historico" element={<Historico />} />
           <Route path="/exames" element={<Exames />} />
+          <Route path="/conhecimento" element={<Conhecimento />} />
           <Route path="/exames/:exameId" element={<ExameDetalhe />} />
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/perfil/dados" element={<PerfilDados />} />

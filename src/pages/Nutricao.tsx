@@ -20,6 +20,7 @@ import { PratoChart } from '../components/PratoChart';
 import { compararComPlano, grupoPrato } from '../lib/alimentos';
 import { hojeLocal } from '../data/date';
 import { contextoUsuario } from '../lib/contexto';
+import { citacoesConhecimento } from '../lib/conhecimento';
 
 type Aba = 'plano' | 'diario' | 'conversa' | 'trocas';
 
@@ -269,8 +270,9 @@ function Conversa({ perguntaInicial, onConsumida }: { perguntaInicial: string | 
     setLoading(true);
     abortRef.current = new AbortController();
     try {
+      const materiais = await citacoesConhecimento(`${pergunta} nutrição alimentação`, 3);
       const resposta = await askNutri(groqApiKey, groqModel, historico, pergunta,
-        { usuario: contextoUsuario(), plano: planoParaTexto(n.refeicoes, n.origem, n.profissional) }, abortRef.current.signal);
+        { usuario: contextoUsuario(), plano: planoParaTexto(n.refeicoes, n.origem, n.profissional), materiais }, abortRef.current.signal);
       n.addMensagem({ papel: 'ia', texto: resposta, origem: 'ia' });
     } catch (e) {
       if ((e as Error)?.name === 'AbortError') return;

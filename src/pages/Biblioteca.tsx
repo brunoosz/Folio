@@ -1,4 +1,6 @@
 import { useMemo, useState, type CSSProperties } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../hooks/useAuthStore';
 import { Card } from '../components/ui/Card';
 import { Pill } from '../components/ui/Pill';
 import { Icon } from '../components/ui/Icon';
@@ -93,6 +95,8 @@ function ArtigoCard({ art, aberto, onToggle, index }: { art: ArtigoCientifico; a
 }
 
 export function Biblioteca() {
+  const navigate = useNavigate();
+  const isAdmin = useAuthStore(s => s.usuario?.role === 'admin');
   const [busca, setBusca] = useState('');
   const [tag, setTag] = useState<string | null>(null);
   const [expandido, setExpandido] = useState<string | null>(null);
@@ -120,7 +124,8 @@ export function Biblioteca() {
 
   return (
     <div className="px-4 pt-6 pb-24 max-w-lg mx-auto flex flex-col gap-4">
-      <PageHeader title="Biblioteca" subtitle="Ciência sobre treino e saúde, em resumo" back className="!mb-0" />
+      <PageHeader title="Biblioteca" subtitle="Ciência sobre treino e saúde, em resumo" back className="!mb-0"
+        right={isAdmin ? <IconButton icon="upload" label="Materiais da IA" onClick={() => navigate('/conhecimento')} /> : undefined} />
 
       {/* Busca */}
       <div className="anim-rise relative" style={{ '--i': 1 } as CSSProperties}>

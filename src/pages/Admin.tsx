@@ -1,4 +1,5 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useConhecimentoStore } from '../hooks/useConhecimentoStore';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button, IconButton } from '../components/ui/Button';
@@ -187,6 +188,7 @@ function IaTab() {
   const aiLastError = useSettingsStore(s => s.aiLastError);
   const status = getAiStatus({ groqApiKey, aiLastError });
   const modelo = GROQ_MODELS.find(m => m.id === groqModel)?.label ?? groqModel;
+  const nDocs = useConhecimentoStore(st => st.docs.length);
   const chaveMascarada = groqApiKey ? `${groqApiKey.slice(0, 4)}••••${groqApiKey.slice(-4)}` : '—';
 
   const info: Record<typeof status, { titulo: string; desc: string; cor: string; fundo: string; icon: IconName }> = {
@@ -245,8 +247,23 @@ function IaTab() {
         </Button>
       </div>
 
-      <Card animate index={3} padding={20}>
-        <h3 className="text-[16px] font-semibold text-ink mb-2">Base de conhecimento</h3>
+      <Card animate index={3} interactive padding={18} onClick={() => navigate('/conhecimento')} aria-label="Abrir materiais da IA">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-[var(--radius-btn)] bg-brand-ghost flex items-center justify-center shrink-0">
+            <Icon name="upload" size={22} color="var(--color-brand)" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="block text-[15px] font-semibold text-ink">Materiais da IA</span>
+            <span className="block text-[13px] text-ink-body">
+              {nDocs ? `${nDocs} ${nDocs === 1 ? 'material' : 'materiais'} · artigos, livros, vídeos` : 'Adicione artigos, livros, apostilas e vídeos'}
+            </span>
+          </div>
+          <Icon name="chevron-right" size={20} color="var(--color-ink-body)" />
+        </div>
+      </Card>
+
+      <Card animate index={4} padding={20}>
+        <h3 className="text-[16px] font-semibold text-ink mb-2">Biblioteca embutida</h3>
         <ul className="flex flex-col">
           {artigos.map(art => (
             <li key={art.id} className="flex items-center justify-between gap-3 py-2 border-b border-black/[0.06] last:border-0">
@@ -259,7 +276,7 @@ function IaTab() {
 
       <p className="flex gap-2 text-[13px] text-ink-body leading-relaxed px-1">
         <Icon name="info" size={16} className="shrink-0 mt-[2px]" />
-        A chave fica salva apenas neste aparelho. Com o Supabase, a busca na base passará a usar embeddings.
+        A chave e os materiais ficam apenas neste aparelho. Com o Supabase, a busca nos materiais passará a usar embeddings.
       </p>
     </div>
   );
