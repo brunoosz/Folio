@@ -9,3 +9,7 @@
 4. **Mapa muscular 2D com paths SVG simples**: regiões musculares como `<path>` clicáveis. IDs anatômicos estáveis permitem migrar para modelo 3D no futuro.
 
 5. **Comparativos de exercícios como dados estáticos**: tabela `comparativos.ts` com diferenças biomecânicas pré-escritas. Futuramente alimentada por IA com fontes científicas.
+
+6. **Electron para .exe desktop**: adicionado fora da lista original de deps (pedido do usuário). HashRouter no lugar de BrowserRouter para funcionar com file://. Build portátil (sem instalador NSIS, que requer Wine no Linux).
+
+7. **HashRouter**: necessário para Electron (file:// não suporta history API). Funciona igual na web.

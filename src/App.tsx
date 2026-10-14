@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { Splash } from './components/Splash/Splash';
 import { BottomNav } from './components/ui/BottomNav';
 import { Home } from './pages/Home';
@@ -12,7 +12,7 @@ export default function App() {
   const handleDone = useCallback(() => setReady(true), []);
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       {!ready && <Splash onDone={handleDone} />}
       <div style={{ opacity: ready ? 1 : 0, transition: 'opacity 200ms ease' }}>
         <Routes>
@@ -23,6 +23,6 @@ export default function App() {
         </Routes>
         <BottomNav />
       </div>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
