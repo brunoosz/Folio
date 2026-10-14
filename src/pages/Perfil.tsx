@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { AvatarMark } from '../components/ui/AvatarMark';
@@ -93,6 +94,12 @@ export function Perfil() {
           <ProgressoChart dados={sonoHist} cor="var(--color-science)" label="Sono (horas/dia)" />
         </div>
       </Card>
+
+      {usuario?.role === 'admin' && (
+        <Link to="/admin">
+          <Button variant="ghost" className="w-full">Painel Admin</Button>
+        </Link>
+      )}
 
       <Button variant="ghost" onClick={logout} className="w-full">Sair da conta</Button>
     </div>

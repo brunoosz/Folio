@@ -8,6 +8,9 @@ import { Mapa } from './pages/Mapa';
 import { Troca } from './pages/Troca';
 import { Rotina } from './pages/Rotina';
 import { Perfil } from './pages/Perfil';
+import { Assistente } from './pages/Assistente';
+import { Biblioteca } from './pages/Biblioteca';
+import { Admin } from './pages/Admin';
 import { Login } from './pages/Login';
 import { useAuthStore, initAuth } from './hooks/useAuthStore';
 
@@ -30,6 +33,9 @@ export default function App() {
           <Route path="/mapa" element={<Mapa />} />
           <Route path="/troca/:itemId" element={<Troca />} />
           <Route path="/rotina" element={<Rotina />} />
+          <Route path="/assistente" element={<Assistente />} />
+          <Route path="/biblioteca" element={<Biblioteca />} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="/perfil" element={<Perfil />} />
         </Routes>
         <BottomNav />

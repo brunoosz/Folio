@@ -166,6 +166,35 @@ export function Home() {
         </button>
       </div>
 
+      {!editando && (
+        <div className="flex gap-3">
+          <Link to="/assistente" className="flex-1">
+            <Card>
+              <div className="flex items-center gap-3">
+                <div className="w-[36px] h-[36px] rounded-[var(--radius-btn)] bg-brand-ghost flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+                <span className="text-[14px] font-medium">Assistente</span>
+              </div>
+            </Card>
+          </Link>
+          <Link to="/biblioteca" className="flex-1">
+            <Card>
+              <div className="flex items-center gap-3">
+                <div className="w-[36px] h-[36px] rounded-[var(--radius-btn)] bg-brand-ghost flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-science)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                  </svg>
+                </div>
+                <span className="text-[14px] font-medium">Biblioteca</span>
+              </div>
+            </Card>
+          </Link>
+        </div>
+      )}
+
       {editando ? (
         <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={blocos.map(b => b.tipo)} strategy={verticalListSortingStrategy}>
