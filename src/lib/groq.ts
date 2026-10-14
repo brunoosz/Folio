@@ -378,3 +378,19 @@ Se não houver horário, use "". Responda apenas com o JSON.`;
   if (!out.length) throw new GroqError('unknown');
   return out;
 }
+
+/** Compara o que foi comido com a refeição do plano (sem julgar, sem calorias). */
+export async function analisarRefeicaoIA(
+  key: string, model: string, planejado: { nome: string; itens: string[] } | null, comido: string[], contexto: string,
+): Promise<string> {
+  const sistema = `${SYSTEM_NUTRI}
+
+Tarefa: comparar o que a pessoa comeu com a refeição planejada. Em até 120 palavras:
+1) diga, de forma acolhedora, o quanto bateu com o plano (grupos alimentares e porções aproximadas);
+2) aponte o que faltou ou sobrou, sem culpa nem julgamento;
+3) sugira 1 ajuste simples para a próxima refeição.
+Não calcule calorias, não prescreva, e lembre de confirmar trocas com a nutricionista quando houver plano.`;
+  const usuario = `${planejado ? `Planejado (${planejado.nome}): ${planejado.itens.join('; ')}` : 'Não há refeição planejada para este horário.'}
+Comido: ${comido.join('; ')}${contexto ? `\nContexto: ${contexto}` : ''}`;
+  return groqChat(key, model, [{ role: 'system', content: sistema }, { role: 'user', content: usuario }], { maxTokens: 450, temperature: 0.3 });
+}

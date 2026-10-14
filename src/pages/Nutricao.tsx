@@ -15,10 +15,13 @@ import {
 import { useSettingsStore } from '../hooks/useSettingsStore';
 import { useAuthStore } from '../hooks/useAuthStore';
 import { gruposAlimentares, buscarAlimento } from '../data/substituicoes';
-import { askNutri, estruturarPlanoIA, GroqError } from '../lib/groq';
+import { askNutri, estruturarPlanoIA, analisarRefeicaoIA, GroqError } from '../lib/groq';
+import { PratoChart } from '../components/PratoChart';
+import { compararComPlano, grupoPrato } from '../lib/alimentos';
+import { hojeLocal } from '../data/date';
 import { contextoUsuario } from '../lib/contexto';
 
-type Aba = 'plano' | 'conversa' | 'trocas';
+type Aba = 'plano' | 'diario' | 'conversa' | 'trocas';
 
 const SUGESTOES = [
   'Monte uma rotina de refeições para os meus horários',
@@ -57,7 +60,7 @@ function FormRefeicao({ inicial, onSalvar, onRemover }: { inicial: Refeicao; onS
   );
 }
 
-function Plano({ onPerguntar }: { onPerguntar: (texto: string) => void }) {
+function Plano({ onPerguntar, onRegistrar }: { onPerguntar: (texto: string) => void; onRegistrar: (r: Refeicao) => void }) {
   const n = useNutricaoStore();
   const { groqApiKey, groqModel } = useSettingsStore();
   const [editando, setEditando] = useState<Refeicao | null>(null);
@@ -84,6 +87,9 @@ function Plano({ onPerguntar }: { onPerguntar: (texto: string) => void }) {
   };
 
   const nova = (): Refeicao => ({ id: `n${Date.now().toString(36)}`, nome: '', hora: '', itens: [] });
+  const agora = new Date();
+  const agoraHHMM = `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+  const proximaId = n.refeicoes.find(r => r.hora && r.hora >= agoraHHMM)?.id ?? null;
 
   return (
     <div className="flex flex-col gap-3">
@@ -108,22 +114,25 @@ function Plano({ onPerguntar }: { onPerguntar: (texto: string) => void }) {
               <p className="text-[13px] text-ink-body mt-1">Este é o plano de referência. A IA sugere apenas trocas equivalentes.</p>
             )}
           </Card>
-          {n.refeicoes.map((r, i) => (
-            <Card key={r.id} animate index={i} padding={16} interactive onClick={() => setEditando(r)} aria-label={`Editar ${r.nome}`}>
-              <div className="flex items-start gap-3">
-                <span className="w-11 shrink-0 text-[14px] font-semibold tabular text-brand pt-0.5">{r.hora || '—'}</span>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-[15px] font-semibold text-ink">{r.nome}</h3>
-                  <ul className="mt-1 flex flex-col gap-0.5">
-                    {r.itens.map((it, k) => (
-                      <li key={k} className="text-[14px] text-ink-body flex gap-2"><span className="mt-[9px] w-1 h-1 rounded-full bg-ink-body shrink-0" />{it}</li>
-                    ))}
-                  </ul>
+          {n.refeicoes.map((r, i) => {
+            const proxima = r.id === proximaId;
+            return (
+              <Card key={r.id} animate index={i} padding={16} className={proxima ? '!border-brand/50' : ''}>
+                <div className="flex items-center gap-3">
+                  <span className="w-11 shrink-0 text-[14px] font-semibold tabular text-brand">{r.hora || '—'}</span>
+                  <h3 className="flex-1 min-w-0 text-[16px] font-semibold text-ink">{r.nome}</h3>
+                  {proxima && <Pill textColor="var(--color-brand)">Próxima</Pill>}
+                  <IconButton icon="edit" label={`Editar ${r.nome}`} size={18} onClick={() => setEditando(r)} className="-mr-2" />
                 </div>
-                <Icon name="edit" size={18} color="var(--color-ink-body)" />
-              </div>
-            </Card>
-          ))}
+                <div className="mt-3">
+                  <PratoChart itens={r.itens} size={proxima ? 150 : 118} titulo={r.nome} />
+                </div>
+                <Button variant="text" size="sm" icon="check" className="mt-2 -ml-2" onClick={() => onRegistrar(r)}>
+                  Registrar o que comi
+                </Button>
+              </Card>
+            );
+          })}
           <div className="grid grid-cols-2 gap-2">
             <Button variant="ghost" icon="plus" onClick={() => setEditando(nova())}>Refeição</Button>
             <Button variant="ghost" icon="copy" onClick={() => setColar(true)}>Colar plano</Button>
@@ -348,11 +357,173 @@ function Conversa({ perguntaInicial, onConsumida }: { perguntaInicial: string | 
   );
 }
 
+/* ---------------- Diário ---------------- */
+
+const horaAgora = () => {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
+function RegistroSheet({ alvo, onClose, onSalvo }: { alvo: { refeicao: Refeicao | null } | null; onClose: () => void; onSalvo: () => void }) {
+  return (
+    <Sheet open={!!alvo} onClose={onClose} title="O que você comeu?">
+      {alvo && <FormRegistro key={alvo.refeicao?.id ?? 'livre'} inicial={alvo.refeicao} onClose={onClose} onSalvo={onSalvo} />}
+    </Sheet>
+  );
+}
+
+function FormRegistro({ inicial, onClose, onSalvo }: { inicial: Refeicao | null; onClose: () => void; onSalvo: () => void }) {
+  const n = useNutricaoStore();
+  const { groqApiKey, groqModel } = useSettingsStore();
+  const [refId, setRefId] = useState<string | null>(inicial?.id ?? null);
+  const [hora, setHora] = useState(horaAgora());
+  const [texto, setTexto] = useState('');
+  const [salvando, setSalvando] = useState(false);
+  const ref = n.refeicoes.find(r => r.id === refId) ?? null;
+  const itens = texto.split(/\n|,|;/).map(s => s.trim()).filter(Boolean);
+  const comp = ref && itens.length ? compararComPlano(ref.itens, itens) : null;
+
+  const salvar = async () => {
+    setSalvando(true);
+    const id = n.registrarRefeicao({ data: hojeLocal(), hora, refeicaoId: ref?.id ?? null, nome: ref?.nome ?? 'Refeição fora do plano', itens });
+    if (groqApiKey) {
+      try {
+        const texto = await analisarRefeicaoIA(groqApiKey, groqModel, ref ? { nome: ref.nome, itens: ref.itens } : null, itens, contextoUsuario());
+        n.setAnalise(id, { texto, origem: 'ia' });
+      } catch { /* fica só a comparação local */ }
+    }
+    setSalvando(false);
+    toast.success('Refeição registrada');
+    onClose();
+    onSalvo();
+  };
+
+  return (
+    <div className="flex flex-col gap-4 pb-2">
+      {n.refeicoes.length > 0 && (
+        <div>
+          <p className="text-[14px] text-ink-body mb-2">Refeição do plano</p>
+          <div className="flex flex-wrap gap-2">
+            {n.refeicoes.map(r => <Pill key={r.id} selected={refId === r.id} onClick={() => setRefId(r.id)}>{r.hora ? `${r.hora} · ` : ''}{r.nome}</Pill>)}
+            <Pill selected={refId === null} onClick={() => setRefId(null)}>Fora do plano</Pill>
+          </div>
+        </div>
+      )}
+      <label className="flex flex-col gap-1 text-[14px] text-ink-body w-[130px]">Horário
+        <input type="time" value={hora} onChange={e => setHora(e.target.value || hora)}
+          className="h-[44px] px-2 text-[16px] font-semibold tabular bg-canvas rounded-[var(--radius-btn)] card-border focus:bg-surface" />
+      </label>
+      <label className="flex flex-col gap-1 text-[14px] text-ink-body">O que você comeu (um por linha ou separado por vírgula)
+        <textarea rows={5} value={texto} onChange={e => setTexto(e.target.value)} autoFocus
+          placeholder={ref ? ref.itens.slice(0, 3).join('\n') : '2 ovos mexidos\n1 pão francês\ncafé com leite'}
+          className="px-3 py-2.5 text-[15px] text-ink bg-canvas rounded-[var(--radius-btn)] card-border focus:bg-surface" />
+      </label>
+      {itens.length > 0 && (
+        <div className="anim-fade rounded-[var(--radius-card)] bg-canvas p-3">
+          <PratoChart itens={itens} size={110} titulo="O que você comeu" />
+          {comp && <ResumoComparacao comp={comp} />}
+        </div>
+      )}
+      <Button variant="primary" icon="check" fullWidth disabled={!itens.length} loading={salvando} onClick={salvar}>
+        {groqApiKey ? 'Salvar e analisar com a IA' : 'Salvar'}
+      </Button>
+    </div>
+  );
+}
+
+function ResumoComparacao({ comp }: { comp: ReturnType<typeof compararComPlano> }) {
+  const cor = comp.aderencia >= 80 ? 'var(--color-ok)' : comp.aderencia >= 50 ? 'var(--color-warn-ink)' : 'var(--color-danger-ink)';
+  return (
+    <div className="mt-3 text-[13px] leading-relaxed">
+      <p className="font-semibold" style={{ color: cor }}>Bateu {comp.aderencia}% com o plano (por grupos alimentares)</p>
+      {comp.faltaram.length > 0 && <p className="text-ink-body">Faltou: {comp.faltaram.map(g => grupoPrato[g].nome.toLowerCase()).join(', ')}.</p>}
+      {comp.extras.length > 0 && <p className="text-ink-body">A mais: {comp.extras.map(g => grupoPrato[g].nome.toLowerCase()).join(', ')}.</p>}
+    </div>
+  );
+}
+
+function Diario({ onRegistrar }: { onRegistrar: () => void }) {
+  const n = useNutricaoStore();
+  const { groqApiKey, groqModel } = useSettingsStore();
+  const [analisando, setAnalisando] = useState<string | null>(null);
+  const hoje = hojeLocal();
+  const deHoje = n.diario.filter(d => d.data === hoje).sort((a, b) => a.hora.localeCompare(b.hora));
+  const anteriores = n.diario.filter(d => d.data < hoje).sort((a, b) => b.data.localeCompare(a.data) || b.hora.localeCompare(a.hora)).slice(0, 10);
+  const planejadasHoje = n.refeicoes.length;
+  const registradasDoPlano = new Set(deHoje.map(d => d.refeicaoId).filter(Boolean)).size;
+
+  const analisar = async (id: string) => {
+    const reg = n.diario.find(d => d.id === id);
+    if (!reg) return;
+    const ref = n.refeicoes.find(r => r.id === reg.refeicaoId) ?? null;
+    setAnalisando(id);
+    try {
+      const texto = await analisarRefeicaoIA(groqApiKey, groqModel, ref ? { nome: ref.nome, itens: ref.itens } : null, reg.itens, contextoUsuario());
+      n.setAnalise(id, { texto, origem: 'ia' });
+    } catch (e) {
+      toast.error(e instanceof GroqError ? e.message : 'Não foi possível analisar agora.');
+    } finally {
+      setAnalisando(null);
+    }
+  };
+
+  const Item = ({ d, i }: { d: (typeof n.diario)[number]; i: number }) => {
+    const ref = n.refeicoes.find(r => r.id === d.refeicaoId);
+    const comp = ref ? compararComPlano(ref.itens, d.itens) : null;
+    return (
+      <Card animate index={i} padding={16}>
+        <div className="flex items-center gap-2">
+          <span className="text-[14px] font-semibold tabular text-brand w-11">{d.hora}</span>
+          <h3 className="flex-1 text-[15px] font-semibold text-ink">{d.nome}</h3>
+          <IconButton icon="trash" label="Remover registro" size={16} onClick={() => n.removerRegistro(d.id)} className="-mr-2" />
+        </div>
+        <div className="mt-2"><PratoChart itens={d.itens} size={104} titulo={d.nome} /></div>
+        {comp && <ResumoComparacao comp={comp} />}
+        {d.analise ? (
+          <div className="mt-3 rounded-[var(--radius-btn)] bg-canvas p-3">
+            <p className="text-[12px] text-ink-body flex items-center gap-1 mb-1"><Icon name="sparkle" size={13} color="var(--color-science)" />Análise da IA</p>
+            <div className="text-[14px] text-ink-body leading-relaxed"><RichText text={d.analise.texto} /></div>
+          </div>
+        ) : groqApiKey ? (
+          <Button variant="text" size="sm" icon="sparkle" className="mt-2 -ml-2" loading={analisando === d.id} onClick={() => analisar(d.id)}>Analisar com a IA</Button>
+        ) : null}
+      </Card>
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <Card animate padding={16} accent="var(--color-brand-ghost)">
+        <p className="text-[15px] font-semibold text-ink">Hoje</p>
+        <p className="text-[14px] text-ink-body">
+          {deHoje.length ? `${deHoje.length} ${deHoje.length === 1 ? 'refeição registrada' : 'refeições registradas'}` : 'Nenhuma refeição registrada ainda'}
+          {planejadasHoje > 0 && ` · ${registradasDoPlano} de ${planejadasHoje} do plano`}
+        </p>
+      </Card>
+      <Button variant="primary" icon="plus" fullWidth onClick={onRegistrar}>Registrar o que comi</Button>
+      {deHoje.map((d, i) => <Item key={d.id} d={d} i={i} />)}
+      {anteriores.length > 0 && (
+        <>
+          <h3 className="text-[15px] font-semibold text-ink mt-2">Dias anteriores</h3>
+          {anteriores.map(d => (
+            <div key={d.id} className="flex items-center gap-3 min-h-[44px] text-[14px] border-b border-black/[0.06]">
+              <span className="text-ink-body tabular w-[84px]">{d.data.slice(8, 10)}/{d.data.slice(5, 7)} {d.hora}</span>
+              <span className="flex-1 text-ink truncate">{d.nome}: {d.itens.join(', ')}</span>
+            </div>
+          ))}
+        </>
+      )}
+      <p className="text-[12px] text-ink-body text-center">A comparação é por grupos alimentares e é aproximada. Ajustes individuais com sua nutricionista.</p>
+    </div>
+  );
+}
+
 /* ---------------- Página ---------------- */
 
 export function Nutricao() {
   const [aba, setAba] = useState<Aba>(() => (sessionStorage.getItem('folio_nutri_aba') as Aba) || 'plano');
   const [perguntaInicial, setPerguntaInicial] = useState<string | null>(null);
+  const [registrando, setRegistrando] = useState<{ refeicao: Refeicao | null } | null>(null);
   const limparConversa = useNutricaoStore(s => s.limparConversa);
   const temMensagens = useNutricaoStore(s => s.mensagens.length > 0);
   useEffect(() => { try { sessionStorage.setItem('folio_nutri_aba', aba); } catch { /* ignore */ } }, [aba]);
@@ -364,8 +535,8 @@ export function Nutricao() {
       <PageHeader title="Nutrição" subtitle="Rotina alimentar e trocas inteligentes" className="!mb-0"
         right={aba === 'conversa' && temMensagens ? <IconButton icon="refresh" label="Nova conversa" onClick={() => { limparConversa(); toast.info('Nova conversa'); }} /> : undefined} />
 
-      <div role="tablist" aria-label="Seções da nutrição" className="anim-fade grid grid-cols-3 p-1 rounded-[var(--radius-btn)] bg-black/[0.05] gap-1">
-        {([['plano', 'Plano'], ['conversa', 'Conversa'], ['trocas', 'Trocas']] as const).map(([k, t]) => (
+      <div role="tablist" aria-label="Seções da nutrição" className="anim-fade grid grid-cols-4 p-1 rounded-[var(--radius-btn)] bg-black/[0.05] gap-1">
+        {([['plano', 'Plano'], ['diario', 'Diário'], ['conversa', 'Conversa'], ['trocas', 'Trocas']] as const).map(([k, t]) => (
           <button key={k} type="button" role="tab" aria-selected={aba === k} onClick={() => setAba(k)}
             className={`pressable focus-ring min-h-[40px] rounded-[6px] text-[14px] font-medium transition-colors duration-200 ${aba === k ? 'bg-surface text-ink card-border' : 'text-ink-body'}`}>
             {t}
@@ -373,7 +544,9 @@ export function Nutricao() {
         ))}
       </div>
 
-      {aba === 'plano' && <Plano onPerguntar={perguntar} />}
+      {aba === 'plano' && <Plano onPerguntar={perguntar} onRegistrar={r => setRegistrando({ refeicao: r })} />}
+      {aba === 'diario' && <Diario onRegistrar={() => setRegistrando({ refeicao: null })} />}
+      <RegistroSheet alvo={registrando} onClose={() => setRegistrando(null)} onSalvo={() => setAba('diario')} />
       {aba === 'conversa' && <Conversa perguntaInicial={perguntaInicial} onConsumida={() => setPerguntaInicial(null)} />}
       {aba === 'trocas' && <Trocas />}
     </div>

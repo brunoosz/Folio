@@ -3,6 +3,17 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface Refeicao { id: string; nome: string; hora: string; itens: string[] }
 
+export interface RegistroRefeicao {
+  id: string;
+  data: string;
+  hora: string;
+  /** Refeição do plano a que se refere (ou null = fora do plano). */
+  refeicaoId: string | null;
+  nome: string;
+  itens: string[];
+  analise?: { texto: string; origem: 'ia' | 'offline' };
+}
+
 export interface MensagemNutri { id: string; papel: 'user' | 'ia'; texto: string; origem?: 'ia' | 'offline' }
 
 interface NutricaoState {
@@ -13,7 +24,11 @@ interface NutricaoState {
   /** Alimentos que a pessoa costuma ter em casa. */
   despensa: string[];
   mensagens: MensagemNutri[];
+  diario: RegistroRefeicao[];
 
+  registrarRefeicao: (r: Omit<RegistroRefeicao, 'id'>) => string;
+  setAnalise: (id: string, analise: RegistroRefeicao['analise']) => void;
+  removerRegistro: (id: string) => void;
   salvarRefeicao: (r: Refeicao) => void;
   removerRefeicao: (id: string) => void;
   substituirPlano: (refeicoes: Omit<Refeicao, 'id'>[], origem: 'nutricionista' | 'proprio', profissional?: string) => void;
@@ -21,6 +36,12 @@ interface NutricaoState {
   alternarDespensa: (alimento: string) => void;
   addMensagem: (m: Omit<MensagemNutri, 'id'>) => void;
   limparConversa: () => void;
+}
+
+function limite90() {
+  const d = new Date();
+  d.setDate(d.getDate() - 90);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 const id = () => `n${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
@@ -33,6 +54,15 @@ export const useNutricaoStore = create<NutricaoState>()(
       profissional: '',
       despensa: [],
       mensagens: [],
+      diario: [],
+      registrarRefeicao: r => {
+        const novo = { ...r, id: id() };
+        // Mantém ~90 dias de diário.
+        set({ diario: [...get().diario.filter(x => x.data >= limite90()), novo] });
+        return novo.id;
+      },
+      setAnalise: (rid, analise) => set({ diario: get().diario.map(x => (x.id === rid ? { ...x, analise } : x)) }),
+      removerRegistro: rid => set({ diario: get().diario.filter(x => x.id !== rid) }),
       salvarRefeicao: r => set({ refeicoes: [...get().refeicoes.filter(x => x.id !== r.id), r].sort(ordenar) }),
       removerRefeicao: rid => set({ refeicoes: get().refeicoes.filter(r => r.id !== rid) }),
       substituirPlano: (refeicoes, origem, profissional = '') =>
