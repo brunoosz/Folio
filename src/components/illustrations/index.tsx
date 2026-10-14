@@ -1,13 +1,10 @@
-const motionSafe = '@media (prefers-reduced-motion: no-preference)';
-
 export function ExercisingPerson({ size = 44, color = 'var(--color-muscle)' }: { size?: number; color?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" aria-hidden>
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" aria-hidden className="illo-wiggle">
       <circle cx="24" cy="10" r="5" stroke={color} strokeWidth="2" fill="none" />
       <path d="M24 17v12M18 22h12M16 40l8-11 8 11" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
       <line x1="14" y1="22" x2="10" y2="18" stroke={color} strokeWidth="2" strokeLinecap="round" />
       <line x1="34" y1="22" x2="38" y2="18" stroke={color} strokeWidth="2" strokeLinecap="round" />
-      <style>{`${motionSafe} { svg:hover circle { animation: bob 0.6s ease infinite alternate; } } @keyframes bob { to { transform: translateY(-2px); } }`}</style>
     </svg>
   );
 }

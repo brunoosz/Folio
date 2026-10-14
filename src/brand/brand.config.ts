@@ -1,7 +1,7 @@
 export const brand = {
   name: 'Folio',
   slogan: 'Corpo, rotina e ciência',
-  logoPath: '/logo-mark.svg',
+  logoPath: './logo-mark.svg',
   colors: {
     brand: '#0075de',
     brandGhost: '#e6f3fe',

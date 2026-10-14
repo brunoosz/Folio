@@ -23,7 +23,7 @@
 - Ilustrações "desenhadinhas" em traço de UMA cor. `prefers-reduced-motion`.
 
 ## Stack
-React + Vite + TS + Tailwind v4 | Zustand | React Router | @dnd-kit | PWA
+React + Vite + TS + Tailwind v4 | Zustand | React Router | @dnd-kit | PWA | Electron (.exe) | Capacitor (.apk)
 Dados mock via interface de repositório (trocar por Supabase depois).
 
 ## Convenções
