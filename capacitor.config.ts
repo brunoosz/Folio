@@ -12,6 +12,8 @@ const config: CapacitorConfig = {
   plugins: {
     // Encaminha fetch/XHR pelo HTTP nativo: chamadas à API da Groq sem CORS no Android.
     CapacitorHttp: { enabled: true },
+    // Lembretes locais (água, sono, remédios, treino).
+    LocalNotifications: { smallIcon: 'ic_stat_folio', iconColor: '#0075de' },
   },
 };
 

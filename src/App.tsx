@@ -10,6 +10,7 @@ import { Perfil } from './pages/Perfil';
 import { Login } from './pages/Login';
 import { Onboarding } from './pages/Onboarding';
 import { DescansoWatcher } from './components/Descanso';
+import { LembretesWatcher } from './components/Lembretes';
 import { usePerfilStore } from './hooks/usePerfilStore';
 import { useAuthStore, initAuth } from './hooks/useAuthStore';
 
@@ -86,6 +87,7 @@ function Shell() {
       </main>
       {showNav && <BottomNav />}
       <DescansoWatcher />
+      <LembretesWatcher />
     </>
   );
 }
