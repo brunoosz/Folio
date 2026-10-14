@@ -25,15 +25,15 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "public/logo-mark.svg"
+      "icon": "build/icon.png"
     },
     "linux": {
       "target": "AppImage",
-      "icon": "public/logo-mark.svg"
+      "icon": "build/icon.png"
     },
     "mac": {
       "target": "dmg",
-      "icon": "public/logo-mark.svg"
+      "icon": "build/icon.png"
     },
     "nsis": {
       "oneClick": true,
