@@ -1,0 +1,44 @@
+@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
+
+@theme {
+  --color-canvas: #f6f5f4;
+  --color-surface: #ffffff;
+  --color-brand: #0075de;
+  --color-brand-ghost: #e6f3fe;
+  --color-ink: #111111;
+  --color-ink-body: #615d59;
+  --color-ink-muted: #757575;
+  --color-ink-subtle: #696969;
+  --color-muscle: #f64932;
+  --color-muscle-secondary: #62aef0;
+  --color-routine: #ffb110;
+  --color-science: #097fe8;
+  --color-saffron: #e89d01;
+  --color-vermillion: #e32d14;
+  --color-mocha: #b18164;
+  --color-midnight: #02093a;
+
+  --radius-card: 12px;
+  --radius-btn: 8px;
+  --radius-pill: 9999px;
+
+  --font-ui: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', Georgia, serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: var(--font-ui);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+
+.card-border { border: 1px solid rgba(0,0,0,0.08); }
+
+.tracking-tight-title { letter-spacing: -0.02em; }
