@@ -273,8 +273,8 @@ function SessoesTab() {
                   <p className="text-[13px] text-ink-body">{dataSessao(s.data)}</p>
                 </div>
                 <Pill
-                  color={concluida ? '#e6f6ea' : 'var(--color-brand-ghost)'}
-                  textColor={concluida ? '#17692f' : '#005fb3'}
+                  color={concluida ? 'var(--color-tint-ok)' : 'var(--color-brand-ghost)'}
+                  textColor={concluida ? 'var(--color-ok)' : 'var(--color-brand-ink)'}
                   icon={concluida ? 'check' : 'clock'}
                 >
                   {concluida ? 'Concluído' : 'Parcial'}

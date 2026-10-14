@@ -11,6 +11,7 @@ import { useAuthStore } from '../hooks/useAuthStore';
 import { useSettingsStore } from '../hooks/useSettingsStore';
 import { useTreinoStore } from '../hooks/useTreinoStore';
 import { askAssistant, GroqError, matchRespostaMock, RESPOSTA_PADRAO } from '../lib/groq';
+import { contextoUsuario } from '../lib/contexto';
 
 type Origem = 'ia' | 'demo' | 'fallback';
 
@@ -54,7 +55,7 @@ function inline(text: string): ReactNode[] {
   });
 }
 
-function RichText({ text }: { text: string }) {
+export function RichText({ text }: { text: string }) {
   const blocks = text.replace(/\r/g, '').split(/\n{2,}/);
   return (
     <div className="flex flex-col gap-2">
@@ -88,7 +89,7 @@ function RichText({ text }: { text: string }) {
   );
 }
 
-function TypingIndicator() {
+export function TypingIndicator() {
   return (
     <div className="anim-rise flex items-center gap-2" role="status" aria-label="O assistente está digitando">
       <AssistantAvatar />
@@ -191,7 +192,7 @@ export function Assistente() {
         .filter((m): m is Exclude<Mensagem, { tipo: 'erro' }> => m.tipo !== 'erro')
         .filter(m => m.tipo === 'user' || m.origem === 'ia')
         .map(m => ({ role: m.tipo === 'user' ? ('user' as const) : ('assistant' as const), content: m.texto }));
-      const res = await askAssistant(groqApiKey, groqModel, history, pergunta, { exerciciosHoje }, ctrl.signal);
+      const res = await askAssistant(groqApiKey, groqModel, history, pergunta, { exerciciosHoje, usuario: contextoUsuario() }, ctrl.signal);
       if (ctrl.signal.aborted || !atual()) return;
       setAiError(null);
       setMensagens(prev => [...prev, { id: uid(), tipo: 'ia', texto: res.texto, artigos: res.artigos, origem: 'ia' }]);
@@ -310,10 +311,10 @@ export function Assistente() {
           if (m.tipo === 'erro') {
             return (
               <div key={m.id} className="anim-rise flex gap-2 items-start">
-                <span className="w-8 h-8 rounded-full bg-[#fdecea] text-vermillion flex items-center justify-center shrink-0" aria-hidden>
+                <span className="w-8 h-8 rounded-full bg-tint-danger text-vermillion flex items-center justify-center shrink-0" aria-hidden>
                   <Icon name="warning" size={16} strokeWidth={2} />
                 </span>
-                <div className="flex-1 rounded-[var(--radius-card)] card-border bg-[#fdecea] px-4 py-3" role="alert">
+                <div className="flex-1 rounded-[var(--radius-card)] card-border bg-tint-danger px-4 py-3" role="alert">
                   <p className="text-[14px] text-ink">{m.texto}</p>
                   <Button
                     variant="text"

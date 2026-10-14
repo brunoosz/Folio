@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { SessaoDodia, SessaoItem } from '../data/types';
 import { addDiasISO, hojeLocal, parseLocalISODate, toLocalISODate } from '../data/date';
+import { seriesFeitas } from '../lib/progressao';
 
 const LS_KEY = 'folio_historico';
 
@@ -39,13 +40,17 @@ export function repsNumero(reps: string): number {
   return m ? parseInt(m[0], 10) : 0;
 }
 
-/** Volume de um item: séries × repetições × carga (kg). */
+/** Volume de um item: soma de repetições × carga das séries feitas (ou séries × reps × carga no formato antigo). */
 export function volumeItem(i: SessaoItem): number {
+  if (i.seriesLog?.length) {
+    return i.seriesLog.reduce((acc, s) => (s.feita ? acc + (s.reps ?? s.alvo) * (s.cargaKg ?? 0) : acc), 0);
+  }
   return (i.series || 0) * repsNumero(i.reps) * (i.cargaKg ?? 0);
 }
 
 export function volumeSessao(s: SessaoDodia): number {
-  return s.itens.reduce((acc, i) => (i.concluido ? acc + volumeItem(i) : acc), 0);
+  // Com registro por série, conta as séries feitas; no formato antigo, só exercícios concluídos.
+  return s.itens.reduce((acc, i) => (i.seriesLog?.length || i.concluido ? acc + volumeItem(i) : acc), 0);
 }
 
 /** Sessões dos últimos `dias` dias (local), mais recentes primeiro. Não altera a entrada. */
@@ -73,7 +78,7 @@ export function progressaoExercicio(sessoes: SessaoHistorico[], exercicioId: str
   for (const s of ordenadas) {
     const itens = s.itens.filter(i => i.exercicioId === exercicioId && i.concluido);
     if (itens.length === 0) continue;
-    const cargaMax = Math.max(...itens.map(i => i.cargaKg ?? 0));
+    const cargaMax = Math.max(...itens.map(i => Math.max(i.cargaKg ?? 0, ...seriesFeitas(i).map(x => x.cargaKg ?? 0))));
     const volumeTotal = itens.reduce((acc, i) => acc + volumeItem(i), 0);
     pontos.push({ data: s.data, cargaMax, volumeTotal });
   }
@@ -140,3 +145,12 @@ export const useHistoricoStore = create<HistoricoState>((set, get) => ({
   getSessoesPorPeriodo: dias => sessoesNoPeriodo(get().sessoes, dias),
   getResumoSemanal: () => resumoSemanal(get().sessoes),
 }));
+
+/** Logs de séries de um exercício nas sessões salvas (mais recente primeiro), excluindo a data informada. */
+export function logsAnteriores(sessoes: SessaoHistorico[], exercicioId: string, excetoData?: string) {
+  return [...sessoes]
+    .filter(s => s.data !== excetoData)
+    .sort((a, b) => b.data.localeCompare(a.data))
+    .map(s => ({ data: s.data, series: s.itens.filter(i => i.exercicioId === exercicioId).flatMap(seriesFeitas) }))
+    .filter(x => x.series.length > 0);
+}

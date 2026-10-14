@@ -14,6 +14,7 @@ export const DEFAULT_GROQ_MODEL = 'llama-3.3-70b-versatile';
 export const REDUCE_MOTION_CLASS = 'reduce-motion';
 
 export type AiStatus = 'ativa' | 'nao_configurada' | 'erro';
+export type Tema = 'claro' | 'escuro' | 'sistema';
 
 interface SettingsState {
   groqApiKey: string;
@@ -21,6 +22,8 @@ interface SettingsState {
   /** Resultado do último teste de conexão (null = nunca testado após salvar). */
   aiLastError: string | null;
   reduceMotion: boolean;
+  tema: Tema;
+  setTema: (t: Tema) => void;
   setGroq: (key: string, model: string) => void;
   setAiError: (err: string | null) => void;
   setReduceMotion: (v: boolean) => void;
@@ -33,6 +36,8 @@ export const useSettingsStore = create<SettingsState>()(
       groqModel: DEFAULT_GROQ_MODEL,
       aiLastError: null,
       reduceMotion: false,
+      tema: 'claro',
+      setTema: t => { applyTema(t); set({ tema: t }); },
       setGroq: (key, model) => set({ groqApiKey: key.trim(), groqModel: model || DEFAULT_GROQ_MODEL, aiLastError: null }),
       setAiError: (err) => set({ aiLastError: err }),
       setReduceMotion: (v) => {
@@ -45,7 +50,7 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createJSONStorage(() => localStorage),
       version: 1,
       onRehydrateStorage: () => (state) => {
-        if (state) applyReduceMotion(state.reduceMotion);
+        if (state) { applyReduceMotion(state.reduceMotion); applyTema(state.tema ?? 'claro'); }
       },
     },
   ),
@@ -56,8 +61,25 @@ export function applyReduceMotion(v: boolean) {
   document.documentElement.classList.toggle(REDUCE_MOTION_CLASS, v);
 }
 
+let mqTema: MediaQueryList | null = null;
+const onMudancaSistema = () => applyTema(useSettingsStore.getState().tema);
+
+/** Aplica o tema em <html data-theme> ("sistema" segue o aparelho). */
+export function applyTema(t: Tema) {
+  if (typeof document === 'undefined') return;
+  const escuroSistema = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+  const efetivo = t === 'sistema' ? (escuroSistema ? 'escuro' : 'claro') : t;
+  document.documentElement.dataset.theme = efetivo;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', efetivo === 'escuro' ? '#141312' : '#f6f5f4');
+  if (!mqTema && window.matchMedia) {
+    mqTema = window.matchMedia('(prefers-color-scheme: dark)');
+    mqTema.addEventListener?.('change', onMudancaSistema);
+  }
+}
+
 // Aplica já na carga do módulo (o persist com localStorage reidrata de forma síncrona).
 applyReduceMotion(useSettingsStore.getState().reduceMotion);
+applyTema(useSettingsStore.getState().tema ?? 'claro');
 
 export function getAiStatus(s: Pick<SettingsState, 'groqApiKey' | 'aiLastError'>): AiStatus {
   if (!s.groqApiKey) return 'nao_configurada';

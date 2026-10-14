@@ -65,7 +65,7 @@ function ArtigoCard({ art, aberto, onToggle, index }: { art: ArtigoCientifico; a
               </p>
               <div className="flex gap-1.5 flex-wrap mt-4">
                 {art.tags.map(tag => (
-                  <Pill key={tag} textColor="#005fb3" className="!text-[12px]">{tag}</Pill>
+                  <Pill key={tag} textColor="var(--color-brand-ink)" className="!text-[12px]">{tag}</Pill>
                 ))}
               </div>
               <div className="flex items-center justify-between gap-3 mt-4">

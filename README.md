@@ -21,16 +21,23 @@ O Folio **não diagnostica, não prescreve e não substitui profissionais**. Ele
 
 ## Funcionalidades
 
-- **Treino** — monte a ficha do dia, reordene exercícios arrastando (drag-and-drop) e registre séries, cargas e repetições. Ao **trocar um exercício**, o Folio mostra as diferenças biomecânicas e avisa quando a troca **não é equivalente** (músculo-alvo, amplitude, estabilidade).
-- **Mapa muscular** — mapa 2D interativo: toque em uma região para ver os músculos envolvidos e os exercícios relacionados.
-- **Rotina e hábitos** — hidratação, sono e hábitos diários com acompanhamento simples.
-- **Histórico e progressão** — sessões anteriores e gráficos de evolução de carga e volume.
-- **Assistente IA (Groq)** — respostas em pt-BR com **citações** da biblioteca científica, configurável pela dona/pelo dono do app.
+- **Pesquisa inicial** — ao entrar pela primeira vez, uma breve pesquisa (altura, peso, sexo, idade, experiência, objetivo, lesões e local de treino) forma a base de conhecimento do usuário. Tudo pode ser pulado e editado depois em *Perfil → Meus dados*, com consentimento explícito para dados de saúde (LGPD).
+- **Treino** — lista compacta com nome, séries, repetições e carga. Toque em um exercício para abrir a ficha completa: **boneco animado** executando o movimento (em pé, sentado, deitado…), link para **vídeo**, passo a passo, músculos, exigência articular e cuidados. Reordene arrastando e escolha entre **"Apenas hoje"** e **"Salvar como padrão"**.
+- **Progressão de carga 12 / 10 / 8** — anote carga, repetições e esforço (leve, no limite, falha) de cada série. Quando a série de 12 fica leve, o Folio sugere subir a carga; a primeira sugestão usa o seu perfil. Gráfico de evolução com **projeção** pela idade e experiência, recordes e 1RM estimado. Cronômetro de descanso entre séries.
+- **Fichas** — crie e edite fichas, use **modelos prontos** (corpo inteiro, AB, ABC) ou peça uma **sugestão à IA** com base no seu perfil.
+- **Troca de exercício** — mostra as diferenças biomecânicas, avisa quando a troca **não é equivalente**, filtra por equipamento e por **proteção articular** (pré-selecionada pelas lesões do perfil) e traz uma sugestão **consultiva** da IA.
+- **Mapa muscular** — boneco musculoso 2D (frente e costas) com **sub-regiões**: peito superior, médio e inferior, porções do deltoide, cabeças do bíceps e do tríceps, glúteos, quadríceps e mais. Cerca de 70 exercícios no catálogo, filtráveis por parte do músculo e equipamento.
+- **Rotina** — **água** pela sua garrafa (ml, com garrafa padrão e "só hoje"), **sono** com horário de dormir e acordar, despertares e qualidade (o app avisa no dia seguinte se a noite foi curta), hábitos e **minha rotina** com horários e tarefas, que aparece na tela inicial e dá contexto à IA.
+- **Nutrição** — cadastre o plano da sua nutricionista (cole o texto e o app organiza), converse com a IA para montar uma rotina alimentar ou trocar alimentos pelo que você tem em casa, e use a tabela de **trocas** que funciona offline.
+- **Histórico** — sessões anteriores, volume e evolução por exercício.
+- **Assistente IA (Groq)** — respostas em pt-BR com **citações** da biblioteca científica e contexto do seu perfil e rotina, configurável pela dona/pelo dono do app.
 - **Biblioteca científica** — referências organizadas por tema, com resumos e links para as fontes.
-- **Painel admin** — catálogo de exercícios com busca e filtros, status da IA e atalho para as configurações, só para a conta proprietária.
+- **Painel admin** — editor do catálogo (criar e editar exercícios, músculos, exigência articular, marcar como revisado), status da IA e configurações, só para a conta proprietária.
 - **Home personalizável** — escolha e reorganize os cartões da tela inicial.
+- **Tema claro e escuro** — ou seguindo o sistema.
+- **Privacidade** — exporte seus dados em JSON, retire o consentimento de dados de saúde ou apague tudo, a qualquer momento.
 - **Animações** — abertura animada, transições suaves entre telas e microinterações; tudo respeita a preferência do sistema por **movimento reduzido**.
-- **PWA / offline** — na web, pode ser instalado como app e continua abrindo sem internet.
+- **PWA / offline** — na web, pode ser instalado como app e continua abrindo sem internet. Fontes embutidas: o visual se mantém offline também no .exe e no .apk.
 
 > Os dados de exercícios estão marcados como **"a revisar por profissional"**.
 

@@ -21,3 +21,15 @@
 10. **Groq com chave no cliente (provisório)**: a dona/o dono cola a chave em Configurações e ela fica salva só naquele dispositivo. Ressalva de segurança: uma chave no cliente pode ser lida por quem tiver acesso ao aparelho/DevTools. Com o Supabase, a chamada deve migrar para uma Edge Function com a chave no servidor.
 
 11. **Fluxo de release no CI**: todo push gera `.exe` (windows-latest + electron-builder NSIS) e `.apk` debug (ubuntu-latest + Gradle) como artefatos. Um push de tag `vX.Y.Z` publica os dois no GitHub Releases com instruções em pt-BR. APK debug por enquanto (sem keystore); assinatura de release fica para depois.
+
+12. **Catálogo com sub-regiões musculares**: `musculo` passou a representar sub-regiões (ex.: peito superior/médio/inferior) agrupadas em `grupo_muscular`. O mapa seleciona por sub-região e a troca de exercício pontua alternativas por sub-regiões primárias em comum. IDs estáveis continuam valendo para o 3D.
+
+13. **Boneco animado por cinemática**: cada padrão de movimento define duas poses (ângulos dos segmentos) e o componente interpola com uma âncora fixa (pé, quadril ou mão). Sem vídeo nem biblioteca: leve, offline e no estilo de traço do Folio. O botão "Ver vídeo" abre uma busca no YouTube.
+
+14. **Progressão 12/10/8 (dupla progressão)**: o registro é série a série (`seriesLog`). A sugestão de carga segue: última sessão da mesma série → estimativa por 1RM (Epley) das outras séries → estimativa inicial pelo perfil (peso corporal × razão de referência do exercício × experiência × idade). Tudo exibido como referência, não prescrição.
+
+15. **Dados de saúde com consentimento**: perfil físico, água e sono só entram no contexto da IA com consentimento explícito; retirar o consentimento apaga esses dados. Exportação em JSON omite a chave da IA.
+
+16. **Tema escuro por tokens**: cores fixas viraram tokens semânticos (`tint-*`, `ok`, `warn-ink`, `map-*`) com valores para claro e escuro em `styles.css`. O tema é aplicado antes da primeira pintura por um script em `index.html`.
+
+17. **Rotas secundárias sob demanda**: telas menos usadas são carregadas com `React.lazy`, mantendo o pacote inicial menor (o PWA continua pré-carregando tudo para uso offline).

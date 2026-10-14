@@ -13,12 +13,21 @@
    - Ícones completos (PWA, Windows, Android adaptativo) e splash
    - CI: instalador Windows (NSIS) + APK Android publicados no GitHub Releases
 
+8. ~~Fase 7: Base de conhecimento do usuário e treino inteligente (v1.0.1)~~
+   - Pesquisa inicial, perfil físico e consentimento LGPD
+   - Treino compacto + ficha do exercício com boneco animado, vídeo e progressão 12/10/8
+   - Fichas (manual, modelos prontos, IA), modos "Apenas hoje"/"Salvar como padrão"
+   - Mapa muscular com sub-regiões e catálogo de ~70 exercícios
+   - Rotina: água por garrafa, registro de sono, minha rotina com horários
+   - Nutrição: plano da nutricionista, conversa com IA e trocas offline
+   - Troca com proteção articular e sugestão da IA; editor do catálogo no admin
+   - Tema escuro, exportação de dados e fontes embutidas
+
 ## Próximas fases
-8. Fase 7: Supabase real + autenticação + RLS (substitui o mock em `repository.ts`)
-9. Fase 8: Chave da Groq em Edge Function do Supabase (sai do dispositivo)
-10. Fase 9: Assistente IA com RAG e citações sobre a biblioteca
-11. Fase 10: Ingestão de PDFs e busca semântica
-12. Fase 11: Mapa muscular 3D
-13. Fase 12: Modo escuro
-14. Fase 13: Onboarding completo e gamificação
+9. Fase 8: Supabase real + autenticação + RLS (substitui o mock em `repository.ts`)
+10. Fase 9: Chave da Groq em Edge Function do Supabase (sai do dispositivo)
+11. Fase 10: Assistente IA com RAG e citações sobre a biblioteca
+12. Fase 11: Ingestão de PDFs e busca semântica
+13. Fase 12: Mapa muscular 3D
+14. Fase 13: Gamificação e notificações
 15. Fase 14: APK assinado (release) e instalador Windows com assinatura de código

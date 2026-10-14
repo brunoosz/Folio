@@ -1,6 +1,9 @@
-/* A @import de fontes precisa vir antes de qualquer regra (o tailwindcss é expandido inline). */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
 @import 'tailwindcss';
+
+/* Fontes embutidas (subconjunto latino, cobre o português): funcionam offline no .exe e no .apk. */
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400 700; font-display: swap; src: url('./assets/fonts/inter-latin.woff2') format('woff2'); }
+@font-face { font-family: 'Source Serif 4'; font-style: normal; font-weight: 400 600; font-display: swap; src: url('./assets/fonts/source-serif-4-latin.woff2') format('woff2'); }
+@font-face { font-family: 'Source Serif 4'; font-style: italic; font-weight: 400; font-display: swap; src: url('./assets/fonts/source-serif-4-italic-latin.woff2') format('woff2'); }
 
 @theme {
   --color-canvas: #f6f5f4;
@@ -19,6 +22,20 @@
   --color-vermillion: #e32d14;
   --color-mocha: #b18164;
   --color-midnight: #02093a;
+
+  /* Fundos de acento (tons claros) e textos semânticos */
+  --color-tint-warn: #fff4dc;
+  --color-tint-danger: #fdecea;
+  --color-tint-ok: #e8f6ec;
+  --color-ok: #1a7f37;
+  --color-warn-ink: #8a5a00;
+  --color-brand-ink: #005fb3;
+  --color-danger-ink: #b8230f;
+  --color-hairline-strong: #d9d7d4;
+  /* Mapa muscular */
+  --color-map-skin: #f3efeb;
+  --color-map-muscle: #e6dfd8;
+  --color-map-group: #f9b7ad;
 
   --radius-card: 12px;
   --radius-btn: 8px;
@@ -215,3 +232,61 @@ html.reduce-motion .skeleton::after { display: none; }
 html.reduce-motion .splash-logo .sp-stroke, html.reduce-motion .splash-logo .sp-f-outline { stroke-dashoffset: 0; }
 html.reduce-motion .splash-logo .sp-paper, html.reduce-motion .splash-logo .sp-vert, html.reduce-motion .splash-word, html.reduce-motion .splash-slogan, html.reduce-motion .splash-skip { opacity: 1; }
 html.reduce-motion .splash-logo .sp-f-mask { transform: none; }
+
+/* Mapa muscular */
+.muscle-region { transition: fill var(--dur) var(--ease-std), filter var(--dur) var(--ease-std); }
+@media (hover: hover) { .muscle-region:hover { filter: brightness(0.93); } }
+.muscle-region:focus, .muscle-region:focus-visible { outline: none; }
+.muscle-region:focus-visible { stroke: var(--color-brand); stroke-width: 2; }
+
+/* =========================================================
+   Tema escuro — mesmos tokens, outros valores.
+   Aplicado por <html data-theme="escuro"> (ver useSettingsStore).
+   ========================================================= */
+html[data-theme='escuro'] {
+  color-scheme: dark;
+  --color-canvas: #141312;
+  --color-surface: #1e1d1b;
+  --color-brand: #3d97f2;
+  --color-brand-ghost: #172a3d;
+  --color-ink: #f2f0ed;
+  --color-ink-body: #bdb7b1;
+  --color-ink-muted: #a29c96;
+  --color-ink-subtle: #aaa49e;
+  --color-muscle: #ff6a53;
+  --color-muscle-secondary: #6db7f5;
+  --color-routine: #ffbb3d;
+  --color-science: #5eacf5;
+  --color-saffron: #f0ae2e;
+  --color-vermillion: #ff7a66;
+  --color-mocha: #cfa185;
+  --color-tint-warn: #352a10;
+  --color-tint-danger: #3b1e1a;
+  --color-tint-ok: #15301f;
+  --color-ok: #67d491;
+  --color-warn-ink: #f2c45c;
+  --color-brand-ink: #93c8ff;
+  --color-danger-ink: #ff8f7d;
+  --color-hairline-strong: #3a3836;
+  --color-map-skin: #2e2b28;
+  --color-map-muscle: #5a534c;
+  --color-map-group: #8a4639;
+}
+html[data-theme='escuro'] .card-border { border-color: rgba(255,255,255,0.1); }
+html[data-theme='escuro'] .bg-black\/\[0\.03\] { background-color: rgba(255,255,255,0.04); }
+html[data-theme='escuro'] .bg-black\/\[0\.04\] { background-color: rgba(255,255,255,0.05); }
+html[data-theme='escuro'] .bg-black\/\[0\.05\] { background-color: rgba(255,255,255,0.07); }
+html[data-theme='escuro'] .bg-black\/\[0\.08\] { background-color: rgba(255,255,255,0.1); }
+html[data-theme='escuro'] .border-black\/\[0\.06\] { border-color: rgba(255,255,255,0.08); }
+html[data-theme='escuro'] .border-black\/\[0\.08\] { border-color: rgba(255,255,255,0.1); }
+html[data-theme='escuro'] .border-black\/15 { border-color: rgba(255,255,255,0.18); }
+html[data-theme='escuro'] .border-black\/20 { border-color: rgba(255,255,255,0.22); }
+html[data-theme='escuro'] .border-black\/25 { border-color: rgba(255,255,255,0.28); }
+html[data-theme='escuro'] .divide-black\/\[0\.06\] > :not(:last-child) { border-color: rgba(255,255,255,0.08); }
+html[data-theme='escuro'] .bg-black\/15, html[data-theme='escuro'] .bg-black\/20 { background-color: rgba(255,255,255,0.18); }
+html[data-theme='escuro'] .skeleton { background: rgba(255,255,255,0.07); }
+html[data-theme='escuro'] .skeleton::after { background: rgba(255,255,255,0.08); }
+html[data-theme='escuro'] .progress-track { background: rgba(255,255,255,0.08); }
+html[data-theme='escuro'] .hover-lift:hover { border-color: rgba(255,255,255,0.2); }
+html[data-theme='escuro'] ::selection { background: #234a72; color: var(--color-ink); }
+html { transition: background-color var(--dur) var(--ease-std); }

@@ -39,7 +39,7 @@ export const toast = {
 };
 
 const meta: Record<ToastKind, { icon: IconName; color: string }> = {
-  success: { icon: 'check', color: '#1a7f37' },
+  success: { icon: 'check', color: 'var(--color-ok)' },
   error: { icon: 'warning', color: 'var(--color-vermillion)' },
   info: { icon: 'info', color: 'var(--color-brand)' },
 };
@@ -49,7 +49,7 @@ export function Toaster() {
   const dismiss = useToastStore(s => s.dismiss);
   // No Assistente a barra de pergunta fica fixa acima da navegação: o toast sobe junto.
   const { pathname } = useLocation();
-  const offset = pathname === '/assistente' ? 196 : 80;
+  const offset = pathname === '/assistente' || pathname === '/nutricao' ? 196 : 80;
   return (
     <div
       aria-live="polite"

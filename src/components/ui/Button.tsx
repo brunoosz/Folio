@@ -23,10 +23,10 @@ const sizes: Record<Size, string> = {
 };
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-brand text-white hover:bg-[#0068c5] active:bg-[#005fb3]',
+  primary: 'bg-brand text-white hover:bg-[#0068c5] active:bg-brand-ink',
   ghost: 'bg-transparent text-brand border border-brand/25 hover:bg-brand-ghost active:bg-brand-ghost',
   text: 'bg-transparent text-brand hover:underline underline-offset-4 px-2',
-  danger: 'bg-transparent text-vermillion border border-vermillion/30 hover:bg-[#fdecea] active:bg-[#fdecea]',
+  danger: 'bg-transparent text-vermillion border border-vermillion/30 hover:bg-tint-danger active:bg-tint-danger',
 };
 
 export function Button({

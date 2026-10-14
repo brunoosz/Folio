@@ -5,6 +5,7 @@ const links: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: 'Início', icon: 'home' },
   { to: '/treino', label: 'Treino', icon: 'dumbbell' },
   { to: '/rotina', label: 'Rotina', icon: 'clock' },
+  { to: '/nutricao', label: 'Nutrição', icon: 'utensils' },
   { to: '/mapa', label: 'Mapa', icon: 'body' },
   { to: '/perfil', label: 'Perfil', icon: 'user' },
 ];
@@ -47,7 +48,7 @@ export function BottomNav() {
                   />
                 </span>
                 <span
-                  className="text-[12px] font-medium transition-colors duration-200"
+                  className="text-[12px] font-medium transition-colors duration-200 whitespace-nowrap"
                   style={{ color: isActive ? 'var(--color-brand)' : 'var(--color-ink-subtle)' }}
                 >
                   {label}

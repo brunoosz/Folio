@@ -31,13 +31,17 @@ import { useAuthStore } from '../hooks/useAuthStore';
 import { repo } from '../data/repository';
 import { siglaDaFicha } from '../data/seed';
 import { artigos } from '../data/ciencia';
-import { formatDataLonga, saudacao } from '../data/date';
+import { formatDataLonga, hojeLocal, saudacao } from '../data/date';
+import { InsightSono } from '../components/InsightSono';
+import { useMinhaRotinaStore, atividadesDoDia, tipoAtividade } from '../hooks/useMinhaRotinaStore';
+import { useAguaSonoStore, aguaDoDia, metaAgua, minutosDormidos, fmtHoras } from '../hooks/useAguaSonoStore';
+import { usePerfilStore } from '../hooks/usePerfilStore';
 import { ExercisingPerson, RestingPerson, Sparkle, HeartPulse } from '../components/illustrations';
 import type { HomeBlocoConfig, HomeBlocoTipo } from '../data/types';
 
 const blocoLabels: Record<HomeBlocoTipo, string> = {
   treino_do_dia: 'Treino do dia',
-  linha_do_tempo: 'Linha do tempo',
+  linha_do_tempo: 'Linha do tempo da rotina',
   pilula_cientifica: 'Pílula científica',
   atalhos_mapa: 'Atalho do mapa muscular',
 };
@@ -83,13 +87,14 @@ function BlocoTreinoDoDia({ index }: { index: number }) {
           <p className="text-[13px] font-semibold text-ink-body tracking-wide">TREINO DE HOJE</p>
           <h3 className="text-[16px] font-semibold leading-snug">{ficha?.nome ?? 'Treino do dia'}</h3>
         </div>
-        {concluida && <Pill color="#e0f8e6" textColor="#1a7a3a" icon="check">Feito</Pill>}
+        {concluida && <Pill color="var(--color-tint-ok)" textColor="var(--color-ok)" icon="check">Feito</Pill>}
       </div>
       <div className="flex items-center justify-between text-[14px] text-ink-body mb-1.5">
         <span>{concluidos} de {total} exercícios</span>
         <span className="tabular">{Math.round((concluidos / total) * 100)}%</span>
       </div>
       <ProgressBar value={concluidos / total} color="var(--color-muscle)" label="Progresso do treino de hoje" className="mb-4" />
+      <InsightSono compacto className="mb-4" />
       <Button
         variant={concluida ? 'ghost' : 'primary'}
         fullWidth
@@ -98,58 +103,111 @@ function BlocoTreinoDoDia({ index }: { index: number }) {
       >
         {rotulo}
       </Button>
+      <SemanaTreinos />
     </Card>
   );
 }
 
-function BlocoLinhaDoTempo({ index }: { index: number }) {
+function SemanaTreinos() {
   const sessao = useTreinoStore(s => s.sessao);
   const fichas = useMemo(() => repo.getFichas(), []);
   const hoje = new Date().getDay();
+  return (
+    <ul className="grid grid-cols-7 gap-1 mt-4" aria-label="Fichas por dia da semana">
+      {DIAS_CURTOS.map((d, i) => {
+        const ficha = fichas.find(f => f.diaSemana === i);
+        const isHoje = i === hoje;
+        const feitoHoje = isHoje && sessao.status === 'concluida';
+        const descricao = `${DIAS_LONGOS[i]}${isHoje ? ' (hoje)' : ''}: ${ficha ? ficha.nome : 'descanso'}${feitoHoje ? ', concluído' : ''}`;
+        return (
+          <li key={d} className="flex flex-col items-center gap-1 anim-rise" style={{ '--i': i } as CSSProperties} aria-label={descricao} title={descricao}>
+            <span className={`text-[12px] font-medium ${isHoje ? 'text-brand' : 'text-ink-body'}`}>{d}</span>
+            <span aria-hidden className={`w-[34px] h-[34px] rounded-[var(--radius-btn)] flex items-center justify-center text-[13px] font-semibold ${
+              isHoje ? 'bg-brand-ghost text-brand border border-brand' : ficha ? 'bg-tint-warn text-ink' : 'bg-black/[0.04] text-ink-body'
+            }`}>
+              {feitoHoje ? <Icon name="check" size={16} strokeWidth={2.4} /> : ficha ? siglaDaFicha(ficha) : <Icon name="moon" size={14} />}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function BlocoLinhaDoTempo({ index }: { index: number }) {
+  const navigate = useNavigate();
+  const atividades = useMinhaRotinaStore(s => s.atividades);
+  const feitas = useMinhaRotinaStore(s => s.feitas);
+  const alternarFeita = useMinhaRotinaStore(s => s.alternarFeita);
+  const agua = useAguaSonoStore(s => s.agua);
+  const metaAguaMl = useAguaSonoStore(s => s.metaAguaMl);
+  const sono = useAguaSonoStore(s => s.sono);
+  const pesoKg = usePerfilStore(s => s.pesoKg);
+  const hoje = hojeLocal();
+  const doDia = atividadesDoDia(atividades);
+  const agora = new Date();
+  const agoraHHMM = `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+  const idxProx = doDia.findIndex(a => a.hora >= agoraHHMM);
+  const inicio = Math.max(0, (idxProx < 0 ? doDia.length : idxProx) - 1);
+  const visiveis = doDia.slice(inicio, inicio + 5);
+  const totalAgua = aguaDoDia(agua, hoje);
+  const meta = metaAgua(metaAguaMl, pesoKg);
+  const regSono = sono.find(r => r.data === hoje);
+
+  const abrirRotina = (aba: 'hoje' | 'minha') => {
+    try { sessionStorage.setItem('folio_rotina_aba', aba); } catch { /* ignore */ }
+    navigate('/rotina');
+  };
 
   return (
     <Card animate index={index}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[15px] font-semibold">Semana de treinos</h3>
-        <Icon name="calendar" size={20} className="text-ink-body" />
+        <h3 className="text-[15px] font-semibold">Linha do tempo da rotina</h3>
+        <Icon name="clock" size={20} className="text-ink-body" />
       </div>
-      <ul className="grid grid-cols-7 gap-1" aria-label="Fichas por dia da semana">
-        {DIAS_CURTOS.map((d, i) => {
-          const ficha = fichas.find(f => f.diaSemana === i);
-          const isHoje = i === hoje;
-          const feitoHoje = isHoje && sessao.status === 'concluida';
-          const descricao = `${DIAS_LONGOS[i]}${isHoje ? ' (hoje)' : ''}: ${ficha ? ficha.nome : 'descanso'}${feitoHoje ? ', concluído' : ''}`;
-          return (
-            <li
-              key={d}
-              className="flex flex-col items-center gap-1.5 anim-rise"
-              style={{ ['--i' as string]: i } as CSSProperties}
-              aria-label={descricao}
-              title={descricao}
-            >
-              <span className={`text-[12px] font-medium ${isHoje ? 'text-brand' : 'text-ink-body'}`}>{d}</span>
-              <span
-                aria-hidden
-                className={`w-[38px] h-[38px] rounded-[var(--radius-btn)] flex items-center justify-center text-[14px] font-semibold transition-colors duration-200 ${
-                  isHoje
-                    ? 'bg-brand text-white'
-                    : ficha
-                      ? 'bg-[#fff3d6] text-ink'
-                      : 'bg-black/[0.04] text-ink-body'
-                }`}
-              >
-                {feitoHoje ? (
-                  <Icon name="check" size={18} strokeWidth={2.4} />
-                ) : ficha ? (
-                  siglaDaFicha(ficha)
-                ) : (
-                  <Icon name="moon" size={16} />
-                )}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <button type="button" onClick={() => abrirRotina('hoje')} className="pressable-soft focus-ring text-left rounded-[var(--radius-btn)] bg-canvas p-3">
+          <span className="flex items-center gap-1.5 text-[13px] text-ink-body"><Icon name="droplet" size={15} color="var(--color-muscle-secondary)" /> Água</span>
+          <span className="block text-[16px] font-bold tabular mt-0.5">{(totalAgua / 1000).toFixed(1).replace('.', ',')} / {(meta / 1000).toFixed(1).replace('.', ',')} L</span>
+          <ProgressBar value={totalAgua / meta} color="var(--color-muscle-secondary)" height={4} className="mt-1.5" label="Água de hoje" />
+        </button>
+        <button type="button" onClick={() => abrirRotina('hoje')} className="pressable-soft focus-ring text-left rounded-[var(--radius-btn)] bg-canvas p-3">
+          <span className="flex items-center gap-1.5 text-[13px] text-ink-body"><Icon name="moon" size={15} color="var(--color-science)" /> Sono</span>
+          <span className="block text-[16px] font-bold tabular mt-0.5">{regSono ? fmtHoras(minutosDormidos(regSono)) : 'Registrar'}</span>
+          <span className="block text-[12px] text-ink-body mt-1">{regSono ? `${regSono.dormiu} → ${regSono.acordou}` : 'noite passada'}</span>
+        </button>
+      </div>
+
+      {doDia.length === 0 ? (
+        <button type="button" onClick={() => abrirRotina('minha')} className="pressable-soft focus-ring w-full text-left rounded-[var(--radius-btn)] border border-dashed border-black/15 p-3 flex items-center gap-3">
+          <Icon name="plus" size={20} color="var(--color-brand)" />
+          <span className="text-[14px] text-ink-body"><strong className="text-ink">Adicionar minha rotina</strong> com horários, para organizar o dia e dar contexto à IA.</span>
+        </button>
+      ) : (
+        <ol className="flex flex-col">
+          {visiveis.map((a, i) => {
+            const t = tipoAtividade[a.tipo];
+            const feita = feitas.includes(`${hoje}|${a.id}`);
+            const proxima = doDia[idxProx]?.id === a.id;
+            return (
+              <li key={a.id} className="anim-rise flex items-center gap-3 min-h-[48px]" style={{ '--i': i } as CSSProperties}>
+                <span className={`tabular text-[13px] w-11 shrink-0 ${proxima ? 'text-brand font-semibold' : 'text-ink-body'}`}>{a.hora}</span>
+                <button type="button" role="checkbox" aria-checked={feita} aria-label={`${a.titulo}: marcar como feita`} onClick={() => alternarFeita(a.id)}
+                  className="pressable focus-ring w-[36px] h-[36px] shrink-0 rounded-full border-2 flex items-center justify-center"
+                  style={{ borderColor: feita || proxima ? t.cor : 'rgba(0,0,0,0.12)', background: feita ? `color-mix(in srgb, ${t.cor} 18%, var(--color-surface))` : 'var(--color-surface)' }}>
+                  {feita ? <Icon name="check" size={16} strokeWidth={2.4} /> : <Icon name={t.icone} size={16} color={t.cor} />}
+                </button>
+                <span className={`flex-1 text-[14px] ${feita ? 'line-through text-ink-body' : proxima ? 'font-semibold text-ink' : 'text-ink'}`}>{a.titulo}</span>
+                {proxima && <Pill textColor="var(--color-brand)">Próxima</Pill>}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+      {doDia.length > 0 && (
+        <Button variant="text" size="sm" iconRight="chevron-right" className="mt-1 -ml-2" onClick={() => abrirRotina('minha')}>Ver rotina completa</Button>
+      )}
     </Card>
   );
 }

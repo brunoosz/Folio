@@ -11,8 +11,10 @@ import { Sheet } from '../components/ui/Sheet';
 import { useAuthStore } from '../hooks/useAuthStore';
 import { useRotinaStore } from '../hooks/useRotinaStore';
 import { useTreinoStore } from '../hooks/useTreinoStore';
-import { addDiasISO, hojeLocal } from '../data/date';
+import { hojeLocal } from '../data/date';
+import { useAguaSonoStore, aguaDoDia, metaAgua, minutosDormidos, historicoAgua, historicoSono } from '../hooks/useAguaSonoStore';
 import { LineChart } from './Historico';
+import { usePerfilStore, perfilParaTexto } from '../hooks/usePerfilStore';
 
 function iniciais(nome: string | undefined) {
   if (!nome) return '?';
@@ -60,6 +62,8 @@ export function Perfil() {
   const habitos = useRotinaStore(s => s.habitos);
   const registros = useRotinaStore(s => s.registros);
   const sessao = useTreinoStore(s => s.sessao);
+  const perfil = usePerfilStore();
+  const resumoPerfil = perfilParaTexto(perfil);
   const [confirmarSaida, setConfirmarSaida] = useState(false);
   const fecharConfirmacao = useCallback(() => setConfirmarSaida(false), []);
 
@@ -68,31 +72,36 @@ export function Perfil() {
   const concluidos = sessao.itens.filter(i => i.concluido).length;
   const total = sessao.itens.length;
 
+  const agua = useAguaSonoStore(s => s.agua);
+  const sono = useAguaSonoStore(s => s.sono);
+  const metaAguaMl = useAguaSonoStore(s => s.metaAguaMl);
+  const metaSonoH = useAguaSonoStore(s => s.metaSonoH);
+  const metaAguaDia = metaAgua(metaAguaMl, perfil.pesoKg);
+  const regSono = sono.find(r => r.data === hoje);
+
   // Derivado de forma reativa a partir de `registros` (atualiza ao registrar hábitos).
-  const habitosHoje = useMemo(
-    () =>
-      habitos.slice(0, 3).map(h => {
+  const habitosHoje = useMemo(() => {
+    const extras = habitos
+      .filter(h => h.tipo !== 'agua' && h.tipo !== 'sono')
+      .slice(0, 2)
+      .map(h => {
         const valor = registros.find(r => r.habitoId === h.id && r.data === hoje)?.valor ?? 0;
         const meta = Math.max(1, h.meta ?? 1);
-        return { ...h, valor, meta };
-      }),
-    [habitos, registros, hoje],
-  );
+        return { id: h.id, nome: h.nome, icone: h.icone, cor: h.cor, unidade: h.unidade, valor, meta };
+      });
+    return [
+      { id: 'agua', nome: 'Água', icone: 'droplet' as const, cor: 'var(--color-muscle-secondary)', unidade: 'ml', valor: aguaDoDia(agua, hoje), meta: metaAguaDia },
+      {
+        id: 'sono', nome: 'Sono', icone: 'moon' as const, cor: 'var(--color-science)', unidade: 'h',
+        valor: regSono ? Math.round((minutosDormidos(regSono) / 60) * 10) / 10 : 0, meta: metaSonoH,
+      },
+      ...extras,
+    ];
+  }, [habitos, registros, hoje, agua, metaAguaDia, regSono, metaSonoH]);
 
-  const historico14 = useCallback(
-    (habitoId: string) => {
-      const out: { x: string; y: number }[] = [];
-      for (let i = 13; i >= 0; i--) {
-        const data = addDiasISO(hoje, -i);
-        out.push({ x: data, y: registros.find(r => r.habitoId === habitoId && r.data === data)?.valor ?? 0 });
-      }
-      return out;
-    },
-    [registros, hoje],
-  );
-  const agua = useMemo(() => historico14('hab_agua'), [historico14]);
-  const sono = useMemo(() => historico14('hab_sono'), [historico14]);
-  const temDados = agua.some(d => d.y > 0) || sono.some(d => d.y > 0);
+  const aguaHist = useMemo(() => historicoAgua(agua, 14), [agua]);
+  const sonoHist = useMemo(() => historicoSono(sono, 14), [sono]);
+  const temDados = aguaHist.some(d => d.y > 0) || sonoHist.some(d => d.y > 0);
 
   const sair = () => {
     setConfirmarSaida(false);
@@ -118,7 +127,7 @@ export function Perfil() {
             <h2 className="text-[18px] font-bold text-ink truncate">{usuario?.nome ?? 'Usuário'}</h2>
             {usuario?.email && <p className="text-[14px] text-ink-body truncate">{usuario.email}</p>}
             <div className="mt-1.5">
-              <Pill icon={isAdmin ? 'shield' : 'user'} textColor="#005fb3">
+              <Pill icon={isAdmin ? 'shield' : 'user'} textColor="var(--color-brand-ink)">
                 {isAdmin ? 'Administrador' : 'Usuário'}
               </Pill>
             </div>
@@ -159,7 +168,7 @@ export function Perfil() {
                   {h.nome}
                 </span>
                 <span className="text-[14px] font-semibold tabular text-ink">
-                  {h.valor}/{h.meta}
+                  {String(h.valor).replace('.', ',')}/{String(h.meta).replace('.', ',')}
                   {h.unidade && <span className="font-normal text-ink-body"> {h.unidade}</span>}
                 </span>
               </div>
@@ -172,9 +181,18 @@ export function Perfil() {
       {/* Links */}
       <LinkCard
         index={idx++}
+        icon="scale"
+        cor="var(--color-brand)"
+        fundo="var(--color-brand-ghost)"
+        titulo="Meus dados"
+        descricao={resumoPerfil || 'Altura, peso, experiência e objetivo'}
+        onClick={() => navigate('/perfil/dados')}
+      />
+      <LinkCard
+        index={idx++}
         icon="history"
         cor="var(--color-muscle)"
-        fundo="#feecea"
+        fundo="var(--color-tint-danger)"
         titulo="Histórico de treinos"
         descricao="Sessões, carga e volume"
         onClick={() => navigate('/historico')}
@@ -201,8 +219,8 @@ export function Perfil() {
         <LinkCard
           index={idx++}
           icon="shield"
-          cor="#b37a00"
-          fundo="#fff4dc"
+          cor="var(--color-warn-ink)"
+          fundo="var(--color-tint-warn)"
           titulo="Painel Admin"
           descricao="Catálogo, IA e materiais"
           onClick={() => navigate('/admin')}
@@ -216,8 +234,8 @@ export function Perfil() {
           {temDados ? 'Registros diários de água e sono.' : 'Registre água e sono na Rotina para ver a evolução.'}
         </p>
         <div className="flex flex-col gap-6">
-          <LineChart dados={agua} cor="var(--color-muscle-secondary)" label="Água" unidade="copos" />
-          <LineChart dados={sono} cor="var(--color-science)" label="Sono" unidade="h" />
+          <LineChart dados={aguaHist} cor="var(--color-muscle-secondary)" label="Água" unidade="ml" />
+          <LineChart dados={sonoHist} cor="var(--color-science)" label="Sono" unidade="h" />
         </div>
       </Card>
 

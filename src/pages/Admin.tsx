@@ -8,11 +8,13 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { EmptyState } from '../components/ui/EmptyState';
 import { RestingPerson } from '../components/illustrations';
 import { repo } from '../data/repository';
+import { equipLabels } from '../data/catalogo';
 import { artigos, respostasIA } from '../data/ciencia';
 import type { Equipamento, Dificuldade } from '../data/types';
 import { useAuthStore } from '../hooks/useAuthStore';
 import { useSettingsStore, getAiStatus, GROQ_MODELS } from '../hooks/useSettingsStore';
 import { SegmentedTabs } from './Historico';
+import { EditorExercicio } from '../components/EditorExercicio';
 
 type Tab = 'catalogo' | 'ia' | 'pdf' | 'usuarios';
 const TABS = [
@@ -22,13 +24,6 @@ const TABS = [
   { key: 'usuarios', label: 'Usuários' },
 ] as const satisfies readonly { key: Tab; label: string }[];
 
-const equipLabels: Record<Equipamento, string> = {
-  barra_livre: 'Barra livre',
-  maquina: 'Máquina',
-  haltere: 'Haltere',
-  cabo: 'Cabo',
-  peso_corporal: 'Peso corporal',
-};
 
 const difLabels: Record<Dificuldade, string> = {
   basico: 'Básico',
@@ -45,7 +40,9 @@ function norm(s: string) {
 /* ---------------- Catálogo ---------------- */
 
 function CatalogoTab() {
-  const exercicios = repo.getExercicios();
+  const [versao, setVersao] = useState(0);
+  const exercicios = useMemo(() => repo.getExercicios(), [versao]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [editor, setEditor] = useState<{ aberto: boolean; id: string | null }>({ aberto: false, id: null });
   const [busca, setBusca] = useState('');
   const [equip, setEquip] = useState<Equipamento | null>(null);
   const [status, setStatus] = useState<StatusFiltro>('todos');
@@ -75,8 +72,8 @@ function CatalogoTab() {
           <span className="block text-[24px] font-bold text-ink tabular">{exercicios.length}</span>
           <span className="text-[13px] text-ink-body">Exercícios cadastrados</span>
         </Card>
-        <Card animate index={1} padding={16} accent={pendentes ? '#fff4dc' : undefined}>
-          <span className="block text-[24px] font-bold tabular" style={{ color: pendentes ? '#8a5a00' : 'var(--color-ink)' }}>{pendentes}</span>
+        <Card animate index={1} padding={16} accent={pendentes ? 'var(--color-tint-warn)' : undefined}>
+          <span className="block text-[24px] font-bold tabular" style={{ color: pendentes ? 'var(--color-warn-ink)' : 'var(--color-ink)' }}>{pendentes}</span>
           <span className="text-[13px] text-ink-body">A revisar por profissional</span>
         </Card>
       </div>
@@ -118,9 +115,12 @@ function CatalogoTab() {
         </div>
       </div>
 
-      <p className="text-[13px] text-ink-body tabular" aria-live="polite">
-        {filtrados.length} de {exercicios.length} exercícios
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[13px] text-ink-body tabular" aria-live="polite">
+          {filtrados.length} de {exercicios.length} exercícios
+        </p>
+        <Button variant="ghost" size="sm" icon="plus" onClick={() => setEditor({ aberto: true, id: null })}>Novo exercício</Button>
+      </div>
 
       {filtrados.length === 0 ? (
         <Card animate>
@@ -141,13 +141,13 @@ function CatalogoTab() {
           {filtrados.map((ex, i) => {
             const prim = repo.getMusculosDoExercicio(ex.id).filter(m => m.papel === 'primario').map(m => m.musculo.nome);
             return (
-              <Card key={ex.id} animate index={Math.min(i, 10)} padding={16}>
+              <Card key={ex.id} animate index={Math.min(i, 10)} padding={16} interactive onClick={() => setEditor({ aberto: true, id: ex.id })} aria-label={`Editar ${ex.nome}`}>
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="text-[15px] font-semibold text-ink leading-snug">{ex.nome}</h3>
                   {ex.revisado ? (
-                    <Pill color="#e6f6ea" textColor="#17692f" icon="check" className="shrink-0 !text-[12px]">Revisado</Pill>
+                    <Pill color="var(--color-tint-ok)" textColor="var(--color-ok)" icon="check" className="shrink-0 !text-[12px]">Revisado</Pill>
                   ) : (
-                    <Pill color="#fff4dc" textColor="#8a5a00" icon="warning" className="shrink-0 !text-[12px]">A revisar</Pill>
+                    <Pill color="var(--color-tint-warn)" textColor="var(--color-warn-ink)" icon="warning" className="shrink-0 !text-[12px]">A revisar</Pill>
                   )}
                 </div>
                 <p className="text-[13px] text-ink-body mt-1">
@@ -164,6 +164,7 @@ function CatalogoTab() {
         <Icon name="info" size={16} className="shrink-0 mt-[2px]" />
         Exercícios marcados “A revisar” precisam de validação por profissional de Educação Física antes de uso real.
       </p>
+      <EditorExercicio exercicioId={editor.id} aberto={editor.aberto} onClose={() => setEditor(e => ({ ...e, aberto: false }))} onSalvo={() => setVersao(v => v + 1)} />
     </div>
   );
 }
@@ -192,22 +193,22 @@ function IaTab() {
     ativa: {
       titulo: 'Groq conectada',
       desc: 'O Assistente responde com IA, apoiado na biblioteca científica.',
-      cor: '#17692f',
-      fundo: '#e6f6ea',
+      cor: 'var(--color-ok)',
+      fundo: 'var(--color-tint-ok)',
       icon: 'sparkle',
     },
     nao_configurada: {
       titulo: 'IA não configurada',
       desc: 'Sem chave, o Assistente usa respostas locais (modo offline).',
-      cor: '#8a5a00',
-      fundo: '#fff4dc',
+      cor: 'var(--color-warn-ink)',
+      fundo: 'var(--color-tint-warn)',
       icon: 'key',
     },
     erro: {
       titulo: 'Falha na última conexão',
       desc: aiLastError ?? 'Verifique a chave e o modelo.',
-      cor: '#b3261e',
-      fundo: '#fdecea',
+      cor: 'var(--color-danger-ink)',
+      fundo: 'var(--color-tint-danger)',
       icon: 'warning',
     },
   };
@@ -273,7 +274,7 @@ function EmBreve({ icon, titulo, desc, itens }: { icon: IconName; titulo: string
         <div className="w-14 h-14 rounded-full bg-brand-ghost flex items-center justify-center">
           <Icon name={icon} size={28} color="var(--color-brand)" />
         </div>
-        <Pill textColor="#005fb3" icon="clock">Em breve</Pill>
+        <Pill textColor="var(--color-brand-ink)" icon="clock">Em breve</Pill>
         <h3 className="text-[17px] font-semibold text-ink">{titulo}</h3>
         <p className="text-[14px] text-ink-body max-w-[300px] leading-relaxed">{desc}</p>
         <ul className="w-full max-w-[320px] text-left flex flex-col gap-2 mt-1">

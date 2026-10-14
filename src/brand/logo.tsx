@@ -42,7 +42,7 @@ export function Wordmark({ className = '', size = 28 }: { className?: string; si
         fontWeight: 700,
         fontSize: size,
         letterSpacing: '-0.02em',
-        color: '#111111',
+        color: 'var(--color-ink)',
       }}
     >
       Folio

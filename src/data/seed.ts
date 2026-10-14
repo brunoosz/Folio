@@ -1,100 +1,14 @@
 import { hojeLocal } from './date';
-import type { Musculo, Exercicio, ExercicioMusculo, FichaModelo, FichaModeloItem, SessaoDodia, SessaoItem } from './types';
+import type { EsquemaSeries, FichaModelo, FichaModeloItem, SessaoDodia, SessaoItem } from './types';
 
-export const musculos: Musculo[] = [
-  { id: 'quadriceps', nome: 'Quadríceps', grupo: 'pernas', regiao: 'anterior' },
-  { id: 'gluteos', nome: 'Glúteos', grupo: 'pernas', regiao: 'posterior' },
-  { id: 'isquiotibiais', nome: 'Isquiotibiais', grupo: 'pernas', regiao: 'posterior' },
-  { id: 'adutores', nome: 'Adutores', grupo: 'pernas', regiao: 'anterior' },
-  { id: 'panturrilha', nome: 'Panturrilha', grupo: 'pernas', regiao: 'posterior' },
-  { id: 'peitoral_maior', nome: 'Peitoral Maior', grupo: 'peito', regiao: 'anterior' },
-  { id: 'deltoide_anterior', nome: 'Deltóide Anterior', grupo: 'ombros', regiao: 'anterior' },
-  { id: 'deltoide_lateral', nome: 'Deltóide Lateral', grupo: 'ombros', regiao: 'anterior' },
-  { id: 'deltoide_posterior', nome: 'Deltóide Posterior', grupo: 'ombros', regiao: 'posterior' },
-  { id: 'trapezio', nome: 'Trapézio', grupo: 'costas', regiao: 'posterior' },
-  { id: 'grande_dorsal', nome: 'Grande Dorsal', grupo: 'costas', regiao: 'posterior' },
-  { id: 'romboides', nome: 'Rombóides', grupo: 'costas', regiao: 'posterior' },
-  { id: 'biceps', nome: 'Bíceps', grupo: 'bracos', regiao: 'anterior' },
-  { id: 'triceps', nome: 'Tríceps', grupo: 'bracos', regiao: 'posterior' },
-  { id: 'abdominais', nome: 'Abdominais', grupo: 'core', regiao: 'anterior' },
-  { id: 'eretores_espinha', nome: 'Eretores da Espinha', grupo: 'core', regiao: 'posterior' },
-  { id: 'obliquos', nome: 'Oblíquos', grupo: 'core', regiao: 'anterior' },
-];
+export { musculos, exercicios, exercicioMusculos, gruposMusculares } from './catalogo';
 
-export const exercicios: Exercicio[] = [
-  { id: 'ex01', nome: 'Agachamento Livre', equipamento: 'barra_livre', dificuldade: 'avancado', notasSeguranca: 'Manter coluna neutra. Joelhos alinhados com os pés. A revisar por profissional.', revisado: false },
-  { id: 'ex02', nome: 'Leg Press 45°', equipamento: 'maquina', dificuldade: 'basico', notasSeguranca: 'Não travar os joelhos na extensão. Costas apoiadas no encosto. A revisar por profissional.', revisado: false },
-  { id: 'ex03', nome: 'Agachamento Búlgaro', equipamento: 'haltere', dificuldade: 'intermediario', notasSeguranca: 'Manter o tronco ereto. Pé de trás elevado em banco. A revisar por profissional.', revisado: false },
-  { id: 'ex04', nome: 'Cadeira Extensora', equipamento: 'maquina', dificuldade: 'basico', notasSeguranca: 'Ajustar eixo da máquina ao joelho. Movimento controlado. A revisar por profissional.', revisado: false },
-  { id: 'ex05', nome: 'Mesa Flexora', equipamento: 'maquina', dificuldade: 'basico', notasSeguranca: 'Quadris apoiados. Não usar impulso. A revisar por profissional.', revisado: false },
-  { id: 'ex06', nome: 'Supino Reto com Barra', equipamento: 'barra_livre', dificuldade: 'intermediario', notasSeguranca: 'Escápulas retraídas. Pés firmes no chão. Usar safety bars. A revisar por profissional.', revisado: false },
-  { id: 'ex07', nome: 'Supino Inclinado com Halteres', equipamento: 'haltere', dificuldade: 'intermediario', notasSeguranca: 'Inclinação de 30–45°. Cotovelos a ~75°. A revisar por profissional.', revisado: false },
-  { id: 'ex08', nome: 'Remada Curvada', equipamento: 'barra_livre', dificuldade: 'intermediario', notasSeguranca: 'Coluna neutra com leve flexão de quadril. Puxar em direção ao umbigo. A revisar por profissional.', revisado: false },
-  { id: 'ex09', nome: 'Puxada Frontal', equipamento: 'cabo', dificuldade: 'basico', notasSeguranca: 'Não puxar atrás da nuca. Controlar a fase excêntrica. A revisar por profissional.', revisado: false },
-  { id: 'ex10', nome: 'Desenvolvimento com Halteres', equipamento: 'haltere', dificuldade: 'intermediario', notasSeguranca: 'Não arquear as costas. Subir até extensão sem travar. A revisar por profissional.', revisado: false },
-  { id: 'ex11', nome: 'Elevação Lateral', equipamento: 'haltere', dificuldade: 'basico', notasSeguranca: 'Cotovelos levemente flexionados. Não elevar acima da linha do ombro. A revisar por profissional.', revisado: false },
-  { id: 'ex12', nome: 'Rosca Direta com Barra', equipamento: 'barra_livre', dificuldade: 'basico', notasSeguranca: 'Cotovelos fixos ao lado do corpo. Sem balanço. A revisar por profissional.', revisado: false },
-  { id: 'ex13', nome: 'Tríceps Corda no Cabo', equipamento: 'cabo', dificuldade: 'basico', notasSeguranca: 'Cotovelos fixos. Abrir a corda no final do movimento. A revisar por profissional.', revisado: false },
-  { id: 'ex14', nome: 'Stiff', equipamento: 'barra_livre', dificuldade: 'avancado', notasSeguranca: 'Coluna neutra obrigatória. Joelhos levemente flexionados. Não arredondar as costas. A revisar por profissional.', revisado: false },
-  { id: 'ex15', nome: 'Panturrilha em Pé na Máquina', equipamento: 'maquina', dificuldade: 'basico', notasSeguranca: 'Amplitude completa. Não quicar no final do movimento. A revisar por profissional.', revisado: false },
-];
-
-export const exercicioMusculos: ExercicioMusculo[] = [
-  { exercicioId: 'ex01', musculoId: 'quadriceps', papel: 'primario' },
-  { exercicioId: 'ex01', musculoId: 'gluteos', papel: 'primario' },
-  { exercicioId: 'ex01', musculoId: 'isquiotibiais', papel: 'secundario' },
-  { exercicioId: 'ex01', musculoId: 'eretores_espinha', papel: 'estabilizador' },
-  { exercicioId: 'ex01', musculoId: 'abdominais', papel: 'estabilizador' },
-
-  { exercicioId: 'ex02', musculoId: 'quadriceps', papel: 'primario' },
-  { exercicioId: 'ex02', musculoId: 'gluteos', papel: 'secundario' },
-  { exercicioId: 'ex02', musculoId: 'isquiotibiais', papel: 'secundario' },
-
-  { exercicioId: 'ex03', musculoId: 'quadriceps', papel: 'primario' },
-  { exercicioId: 'ex03', musculoId: 'gluteos', papel: 'primario' },
-  { exercicioId: 'ex03', musculoId: 'abdominais', papel: 'estabilizador' },
-
-  { exercicioId: 'ex04', musculoId: 'quadriceps', papel: 'primario' },
-
-  { exercicioId: 'ex05', musculoId: 'isquiotibiais', papel: 'primario' },
-  { exercicioId: 'ex05', musculoId: 'gluteos', papel: 'secundario' },
-
-  { exercicioId: 'ex06', musculoId: 'peitoral_maior', papel: 'primario' },
-  { exercicioId: 'ex06', musculoId: 'triceps', papel: 'secundario' },
-  { exercicioId: 'ex06', musculoId: 'deltoide_anterior', papel: 'secundario' },
-
-  { exercicioId: 'ex07', musculoId: 'peitoral_maior', papel: 'primario' },
-  { exercicioId: 'ex07', musculoId: 'deltoide_anterior', papel: 'secundario' },
-  { exercicioId: 'ex07', musculoId: 'triceps', papel: 'secundario' },
-
-  { exercicioId: 'ex08', musculoId: 'grande_dorsal', papel: 'primario' },
-  { exercicioId: 'ex08', musculoId: 'romboides', papel: 'secundario' },
-  { exercicioId: 'ex08', musculoId: 'trapezio', papel: 'secundario' },
-  { exercicioId: 'ex08', musculoId: 'biceps', papel: 'secundario' },
-  { exercicioId: 'ex08', musculoId: 'eretores_espinha', papel: 'estabilizador' },
-
-  { exercicioId: 'ex09', musculoId: 'grande_dorsal', papel: 'primario' },
-  { exercicioId: 'ex09', musculoId: 'biceps', papel: 'secundario' },
-  { exercicioId: 'ex09', musculoId: 'romboides', papel: 'secundario' },
-
-  { exercicioId: 'ex10', musculoId: 'deltoide_anterior', papel: 'primario' },
-  { exercicioId: 'ex10', musculoId: 'deltoide_lateral', papel: 'secundario' },
-  { exercicioId: 'ex10', musculoId: 'triceps', papel: 'secundario' },
-
-  { exercicioId: 'ex11', musculoId: 'deltoide_lateral', papel: 'primario' },
-  { exercicioId: 'ex11', musculoId: 'trapezio', papel: 'estabilizador' },
-
-  { exercicioId: 'ex12', musculoId: 'biceps', papel: 'primario' },
-  { exercicioId: 'ex12', musculoId: 'deltoide_anterior', papel: 'estabilizador' },
-
-  { exercicioId: 'ex13', musculoId: 'triceps', papel: 'primario' },
-
-  { exercicioId: 'ex14', musculoId: 'isquiotibiais', papel: 'primario' },
-  { exercicioId: 'ex14', musculoId: 'gluteos', papel: 'primario' },
-  { exercicioId: 'ex14', musculoId: 'eretores_espinha', papel: 'secundario' },
-
-  { exercicioId: 'ex15', musculoId: 'panturrilha', papel: 'primario' },
-];
+function it(
+  fichaId: string, id: string, exercicioId: string, ordem: number, series: number, reps: string,
+  descansoSeg: number, esquema: EsquemaSeries, notas = '',
+): FichaModeloItem {
+  return { id, fichaId, exercicioId, ordem, series, reps, descansoSeg, notas, esquema };
+}
 
 const fichaAId = 'ficha_a';
 const fichaBId = 'ficha_b';
@@ -106,13 +20,13 @@ export const fichasModelo: FichaModelo[] = [
     sigla: 'A',
     diaSemana: 1,
     itens: [
-      { id: 'fmi01', fichaId: fichaAId, exercicioId: 'ex01', ordem: 0, series: 4, reps: '8-10', descansoSeg: 120, notas: '' },
-      { id: 'fmi02', fichaId: fichaAId, exercicioId: 'ex02', ordem: 1, series: 3, reps: '12', descansoSeg: 90, notas: '' },
-      { id: 'fmi03', fichaId: fichaAId, exercicioId: 'ex03', ordem: 2, series: 3, reps: '10 (cada perna)', descansoSeg: 90, notas: '' },
-      { id: 'fmi04', fichaId: fichaAId, exercicioId: 'ex04', ordem: 3, series: 3, reps: '12-15', descansoSeg: 60, notas: '' },
-      { id: 'fmi05', fichaId: fichaAId, exercicioId: 'ex05', ordem: 4, series: 3, reps: '12', descansoSeg: 60, notas: '' },
-      { id: 'fmi06', fichaId: fichaAId, exercicioId: 'ex14', ordem: 5, series: 3, reps: '10', descansoSeg: 90, notas: '' },
-      { id: 'fmi07', fichaId: fichaAId, exercicioId: 'ex15', ordem: 6, series: 4, reps: '15', descansoSeg: 45, notas: '' },
+      it(fichaAId, 'fmi01', 'ex01', 0, 3, '12/10/8', 120, 'piramide'),
+      it(fichaAId, 'fmi02', 'ex02', 1, 3, '12/10/8', 90, 'piramide'),
+      it(fichaAId, 'fmi03', 'ex03', 2, 3, '10', 90, 'fixo', 'Cada perna'),
+      it(fichaAId, 'fmi04', 'ex04', 3, 3, '12/10/8', 60, 'piramide'),
+      it(fichaAId, 'fmi05', 'ex05', 4, 3, '12/10/8', 60, 'piramide'),
+      it(fichaAId, 'fmi06', 'ex14', 5, 3, '12/10/8', 90, 'piramide'),
+      it(fichaAId, 'fmi07', 'ex15', 6, 4, '15', 45, 'fixo'),
     ],
   },
   {
@@ -121,14 +35,14 @@ export const fichasModelo: FichaModelo[] = [
     sigla: 'B',
     diaSemana: 3,
     itens: [
-      { id: 'fmi08', fichaId: fichaBId, exercicioId: 'ex06', ordem: 0, series: 4, reps: '8-10', descansoSeg: 120, notas: '' },
-      { id: 'fmi09', fichaId: fichaBId, exercicioId: 'ex07', ordem: 1, series: 3, reps: '10-12', descansoSeg: 90, notas: '' },
-      { id: 'fmi10', fichaId: fichaBId, exercicioId: 'ex08', ordem: 2, series: 4, reps: '8-10', descansoSeg: 90, notas: '' },
-      { id: 'fmi11', fichaId: fichaBId, exercicioId: 'ex09', ordem: 3, series: 3, reps: '10-12', descansoSeg: 90, notas: '' },
-      { id: 'fmi12', fichaId: fichaBId, exercicioId: 'ex10', ordem: 4, series: 3, reps: '10', descansoSeg: 90, notas: '' },
-      { id: 'fmi13', fichaId: fichaBId, exercicioId: 'ex11', ordem: 5, series: 3, reps: '12-15', descansoSeg: 60, notas: '' },
-      { id: 'fmi14', fichaId: fichaBId, exercicioId: 'ex12', ordem: 6, series: 3, reps: '10-12', descansoSeg: 60, notas: '' },
-      { id: 'fmi15', fichaId: fichaBId, exercicioId: 'ex13', ordem: 7, series: 3, reps: '12', descansoSeg: 60, notas: '' },
+      it(fichaBId, 'fmi08', 'ex06', 0, 3, '12/10/8', 120, 'piramide'),
+      it(fichaBId, 'fmi09', 'ex07', 1, 3, '12/10/8', 90, 'piramide'),
+      it(fichaBId, 'fmi10', 'ex08', 2, 3, '12/10/8', 90, 'piramide'),
+      it(fichaBId, 'fmi11', 'ex09', 3, 3, '12/10/8', 90, 'piramide'),
+      it(fichaBId, 'fmi12', 'ex10', 4, 3, '12/10/8', 90, 'piramide'),
+      it(fichaBId, 'fmi13', 'ex11', 5, 3, '12/10/8', 60, 'piramide'),
+      it(fichaBId, 'fmi14', 'ex12', 6, 3, '12/10/8', 60, 'piramide'),
+      it(fichaBId, 'fmi15', 'ex13', 7, 3, '12/10/8', 60, 'piramide'),
     ],
   },
 ];
@@ -171,6 +85,7 @@ export function criarSessao(ficha: FichaModelo, data: string = hojeLocal()): Ses
       concluido: false,
       fichaItemId: item.id,
       descansoSeg: item.descansoSeg,
+      esquema: item.esquema,
     }));
   return { id: sessaoId, fichaModeloId: ficha.id, data, status: 'pendente', itens };
 }
@@ -183,4 +98,82 @@ export function sessaoVazia(data: string = hojeLocal()): SessaoDodia {
 export function getSessaoHoje(fichas: FichaModelo[] = fichasModelo): SessaoDodia {
   const ficha = fichaDoDia(fichas);
   return ficha ? criarSessao(ficha) : sessaoVazia();
+}
+
+/* ---------------- Modelos prontos de ficha ---------------- */
+
+export interface ModeloFicha {
+  id: string;
+  nome: string;
+  descricao: string;
+  fichas: { nome: string; sigla: string; diaSemana: number | null; itens: [string, number, string, number, EsquemaSeries][] }[];
+}
+
+/** [exercicioId, séries, reps, descanso (s), esquema] */
+export const modelosFicha: ModeloFicha[] = [
+  {
+    id: 'fullbody',
+    nome: 'Corpo inteiro (iniciante)',
+    descricao: '1 treino para repetir 2–3x por semana, com exercícios em máquinas e halteres.',
+    fichas: [
+      { nome: 'Corpo inteiro', sigla: 'F', diaSemana: 1, itens: [
+        ['ex55', 3, '12/10/8', 90, 'piramide'], ['ex25', 3, '12/10/8', 90, 'piramide'], ['ex09', 3, '12/10/8', 90, 'piramide'],
+        ['ex56', 3, '12/10/8', 60, 'piramide'], ['ex34', 3, '12/10/8', 60, 'piramide'], ['ex27', 3, '12/10/8', 60, 'piramide'],
+        ['ex66', 3, '30', 45, 'fixo'],
+      ] },
+    ],
+  },
+  {
+    id: 'ab',
+    nome: 'AB (superiores e inferiores)',
+    descricao: '2 treinos alternados, 4x por semana.',
+    fichas: [
+      { nome: 'Treino A — Superiores', sigla: 'A', diaSemana: 1, itens: [
+        ['ex18', 3, '12/10/8', 90, 'piramide'], ['ex27', 3, '12/10/8', 90, 'piramide'], ['ex07', 3, '12/10/8', 90, 'piramide'],
+        ['ex09', 3, '12/10/8', 90, 'piramide'], ['ex11', 3, '12/10/8', 60, 'piramide'], ['ex41', 3, '12/10/8', 60, 'piramide'],
+        ['ex48', 3, '12/10/8', 60, 'piramide'],
+      ] },
+      { nome: 'Treino B — Inferiores', sigla: 'B', diaSemana: 2, itens: [
+        ['ex53', 3, '12/10/8', 120, 'piramide'], ['ex57', 3, '12/10/8', 90, 'piramide'], ['ex04', 3, '12/10/8', 60, 'piramide'],
+        ['ex56', 3, '12/10/8', 60, 'piramide'], ['ex58', 3, '12/10/8', 60, 'piramide'], ['ex15', 4, '15', 45, 'fixo'],
+        ['ex64', 3, '15', 45, 'fixo'],
+      ] },
+    ],
+  },
+  {
+    id: 'abc',
+    nome: 'ABC (empurrar, puxar, pernas)',
+    descricao: '3 treinos em sequência, para quem já treina regularmente.',
+    fichas: [
+      { nome: 'Treino A — Peito, ombros e tríceps', sigla: 'A', diaSemana: 1, itens: [
+        ['ex06', 3, '12/10/8', 120, 'piramide'], ['ex07', 3, '12/10/8', 90, 'piramide'], ['ex22', 3, '12/10/8', 60, 'piramide'],
+        ['ex10', 3, '12/10/8', 90, 'piramide'], ['ex11', 3, '12/10/8', 60, 'piramide'], ['ex13', 3, '12/10/8', 60, 'piramide'],
+        ['ex46', 3, '12/10/8', 60, 'piramide'],
+      ] },
+      { nome: 'Treino B — Costas e bíceps', sigla: 'B', diaSemana: 3, itens: [
+        ['ex09', 3, '12/10/8', 90, 'piramide'], ['ex08', 3, '12/10/8', 120, 'piramide'], ['ex28', 3, '12/10/8', 90, 'piramide'],
+        ['ex38', 3, '12/10/8', 60, 'piramide'], ['ex12', 3, '12/10/8', 60, 'piramide'], ['ex42', 3, '12/10/8', 60, 'piramide'],
+      ] },
+      { nome: 'Treino C — Pernas e abdômen', sigla: 'C', diaSemana: 5, itens: [
+        ['ex01', 3, '12/10/8', 120, 'piramide'], ['ex02', 3, '12/10/8', 90, 'piramide'], ['ex04', 3, '12/10/8', 60, 'piramide'],
+        ['ex05', 3, '12/10/8', 60, 'piramide'], ['ex57', 3, '12/10/8', 90, 'piramide'], ['ex15', 4, '15', 45, 'fixo'],
+        ['ex65', 3, '12', 45, 'fixo'],
+      ] },
+    ],
+  },
+];
+
+/** Cria fichas reais (com ids novos) a partir de um modelo. */
+export function instanciarModelo(modelo: ModeloFicha, sufixo: string): FichaModelo[] {
+  return modelo.fichas.map((f, fi) => {
+    const fichaId = `ficha_${modelo.id}_${fi}_${sufixo}`;
+    return {
+      id: fichaId,
+      nome: f.nome,
+      sigla: f.sigla,
+      diaSemana: f.diaSemana,
+      itens: f.itens.map(([exercicioId, series, reps, descansoSeg, esquema], i) =>
+        it(fichaId, `${fichaId}_i${i}`, exercicioId, i, series, reps, descansoSeg, esquema)),
+    };
+  });
 }
