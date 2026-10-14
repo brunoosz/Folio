@@ -16,8 +16,9 @@ function write<T>(key: string, d: T) {
 
 /** Garante ícones válidos (dados antigos usavam emoji). */
 function lerHabitos(): HabitoModelo[] {
+  // Lista vazia é válida: a pessoa pode ter removido tudo na personalização.
   const lista = read<HabitoModelo[]>(LS_HABITOS, habitosDefault);
-  if (!Array.isArray(lista) || lista.length === 0) return habitosDefault;
+  if (!Array.isArray(lista)) return habitosDefault;
   return lista.map(h => ({
     ...h,
     icone: (iconNames as string[]).includes(h.icone) ? h.icone : iconePorTipo[h.tipo] ?? 'check',
@@ -42,6 +43,9 @@ interface RotinaState {
   decrementar: (habitoId: string) => void;
   setValor: (habitoId: string, valor: number) => void;
   setNotas: (habitoId: string, notas: string) => void;
+  salvarHabito: (h: HabitoModelo) => void;
+  removerHabito: (habitoId: string) => void;
+  restaurarPadrao: () => void;
   getRegistroHoje: (habitoId: string) => HabitoRegistro;
   getHistorico: (habitoId: string, dias: number) => { data: string; valor: number }[];
   /** Dias consecutivos batendo a meta do hábito (hoje conta se já cumprido). */
@@ -125,6 +129,29 @@ export const useRotinaStore = create<RotinaState>((set, get) => {
 
     setNotas(habitoId, notas) {
       upsert(habitoId, r => ({ ...r, notas }));
+    },
+
+    salvarHabito(h) {
+      const atual = get().habitos;
+      const habitos = atual.some(x => x.id === h.id) ? atual.map(x => (x.id === h.id ? h : x)) : [...atual, h];
+      write(LS_HABITOS, habitos);
+      set({ habitos });
+    },
+
+    removerHabito(habitoId) {
+      const habitos = get().habitos.filter(h => h.id !== habitoId);
+      write(LS_HABITOS, habitos);
+      set({ habitos });
+    },
+
+    restaurarPadrao() {
+      // Mantém hábitos personalizados e devolve os padrões que faltam.
+      const atual = get().habitos;
+      const habitos = [...habitosDefault.filter(d => !atual.some(h => h.id === d.id)), ...atual];
+      const ordem = (h: HabitoModelo) => { const i = habitosDefault.findIndex(d => d.id === h.id); return i < 0 ? 99 : i; };
+      habitos.sort((a, b) => ordem(a) - ordem(b));
+      write(LS_HABITOS, habitos);
+      set({ habitos });
     },
   };
 });

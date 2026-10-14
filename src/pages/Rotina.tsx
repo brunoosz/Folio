@@ -18,6 +18,9 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { EmptyState } from '../components/ui/EmptyState';
 import { RestingPerson } from '../components/illustrations';
 import { useRotinaStore } from '../hooks/useRotinaStore';
+import { useMedicamentosStore } from '../hooks/useMedicamentosStore';
+import { CartaoRemedios, MedicamentosSheet } from '../components/Remedios';
+import { PersonalizarRotinaSheet } from '../components/PersonalizarRotina';
 import { formatDataLonga, hojeLocal, parseLocalISODate } from '../data/date';
 
 const LETRAS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
@@ -477,6 +480,9 @@ export function Rotina() {
   const { habitos, load, incrementar, decrementar, getRegistroHoje, getHistorico, getSequencia } = useRotinaStore();
   const [aba, setAba] = useState<Aba>(() => (sessionStorage.getItem('folio_rotina_aba') === 'minha' ? 'minha' : 'hoje'));
   const [, setTick] = useState(0);
+  const [personalizar, setPersonalizar] = useState(false);
+  const [remedios, setRemedios] = useState(false);
+  const mostrarRemedios = useMedicamentosStore(s => s.mostrarNaRotina);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
@@ -494,7 +500,8 @@ export function Rotina() {
 
   return (
     <div className="px-4 pt-6 pb-24 max-w-lg mx-auto flex flex-col gap-4">
-      <PageHeader title="Rotina" subtitle={subtitulo} className="!mb-0" />
+      <PageHeader title="Rotina" subtitle={subtitulo} className="!mb-0"
+        right={<IconButton icon="settings" label="Personalizar rotina" onClick={() => setPersonalizar(true)} />} />
 
       <div role="tablist" aria-label="Seções da rotina" className="anim-fade grid grid-cols-2 p-1 rounded-[var(--radius-btn)] bg-black/[0.05] gap-1">
         {([['hoje', 'Hoje'], ['minha', 'Minha rotina']] as const).map(([k, t]) => (
@@ -507,10 +514,15 @@ export function Rotina() {
 
       {aba === 'minha' ? <MinhaRotina /> : (
         <>
-          <CartaoAgua index={0} />
-          <CartaoSono index={1} />
+          {habitos.some(h => h.tipo === 'agua') && <CartaoAgua index={0} />}
+          {habitos.some(h => h.tipo === 'sono') && <CartaoSono index={1} />}
+          {mostrarRemedios && <CartaoRemedios index={2} onGerenciar={() => setRemedios(true)} />}
 
-          <h2 className="text-[16px] font-semibold text-ink mt-1 anim-fade">Hábitos</h2>
+          {outros.length > 0 && <h2 className="text-[16px] font-semibold text-ink mt-1 anim-fade">Hábitos</h2>}
+          {!habitos.length && !mostrarRemedios && (
+            <EmptyState compact title="Sua rotina está vazia" description="Escolha o que acompanhar no dia a dia."
+              action={<Button variant="ghost" icon="settings" onClick={() => setPersonalizar(true)}>Personalizar</Button>} />
+          )}
           {outros.map((habito, idx) => {
             const reg = getRegistroHoje(habito.id);
             const meta = Math.max(1, habito.meta ?? 1);
@@ -518,7 +530,7 @@ export function Rotina() {
             const completo = reg.valor >= meta;
             const seq = getSequencia(habito.id);
             return (
-              <Card key={habito.id} animate index={idx + 2} padding={20}>
+              <Card key={habito.id} animate index={idx + 3} padding={20}>
                 <div className="flex items-center gap-3">
                   <ProgressRing value={reg.valor / meta} color={habito.cor}>
                     <span key={completo ? 'ok' : 'no'} className={completo ? 'anim-pop inline-flex' : 'inline-flex'}>
@@ -557,6 +569,10 @@ export function Rotina() {
       )}
 
       <p className="text-[13px] text-ink-body text-center">Acompanhamento de hábitos não substitui orientação profissional.</p>
+
+      <PersonalizarRotinaSheet open={personalizar} onClose={() => setPersonalizar(false)}
+        onGerenciarRemedios={() => { setPersonalizar(false); setRemedios(true); }} />
+      <MedicamentosSheet open={remedios} onClose={() => setRemedios(false)} />
     </div>
   );
 }

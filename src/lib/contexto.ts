@@ -2,6 +2,7 @@ import { getPerfil, perfilParaTexto, usePerfilStore } from '../hooks/usePerfilSt
 import { useAguaSonoStore, aguaSonoParaTexto, metaAgua } from '../hooks/useAguaSonoStore';
 import { useExamesStore } from '../hooks/useExamesStore';
 import { statusResultado, valorParaTexto } from './exames';
+import { useMedicamentosStore, medicamentosParaTexto } from '../hooks/useMedicamentosStore';
 import { useMinhaRotinaStore, rotinaParaTexto } from '../hooks/useMinhaRotinaStore';
 
 /**
@@ -16,6 +17,8 @@ export function contextoUsuario(): string {
     if (p) partes.push(p);
     const as = useAguaSonoStore.getState();
     partes.push(aguaSonoParaTexto(as, metaAgua(as.metaAguaMl, perfil.pesoKg)));
+    const meds = medicamentosParaTexto(useMedicamentosStore.getState().medicamentos);
+    if (meds) partes.push(meds);
     // Último exame: só os itens fora da faixa (resumo curto).
     const ultimo = [...useExamesStore.getState().exames].sort((a, b) => b.data.localeCompare(a.data))[0];
     if (ultimo) {
