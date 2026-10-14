@@ -147,15 +147,16 @@ O workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) roda
 
 1. **windows** — instala dependências, checa tipos e gera o instalador NSIS.
 2. **android** — gera o build web, sincroniza o Capacitor e compila o APK com Gradle (JDK 21).
-3. **release** — somente em tags `v*`: publica o `.exe` e o `.apk` no GitHub Releases com instruções em pt-BR.
+3. **release** — em tags `v*`, em merges na `main` (quando a versão do `package.json` ainda não tem release) ou em commits com `[release]` na mensagem: publica o `.exe` e o `.apk` no GitHub Releases com instruções em pt-BR, criando a tag `v<versão>` automaticamente.
 
 Para lançar uma versão:
 
 ```bash
 npm version 1.0.1 --no-git-tag-version   # atualiza package.json (a versão do Android vem daqui)
 git commit -am "release: v1.0.1"
-git tag v1.0.1
-git push && git push --tags
+git push            # ao chegar na main, a release v1.0.1 é publicada
+# ou, em qualquer branch: inclua [release] na mensagem do commit,
+# ou crie a tag manualmente: git tag v1.0.1 && git push --tags
 ```
 
 Os artefatos de cada push também ficam disponíveis na aba **Actions** do GitHub.
