@@ -1,13 +1,31 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Pill } from '../components/ui/Pill';
-import { Button } from '../components/ui/Button';
+import { Icon } from '../components/ui/Icon';
+import { PageHeader } from '../components/ui/PageHeader';
+import { EmptyState } from '../components/ui/EmptyState';
+import { HeartPulse } from '../components/illustrations';
 import { repo } from '../data/repository';
+import { ExercicioDetalhesSheet } from './Treino';
 
 const equipLabels: Record<string, string> = {
   barra_livre: 'Barra livre', maquina: 'Máquina', haltere: 'Halteres', cabo: 'Cabo', peso_corporal: 'Peso corporal',
 };
+
+const grupoLabels: Record<string, string> = {
+  pernas: 'Pernas', peito: 'Peito', ombros: 'Ombros', costas: 'Costas', bracos: 'Braços', core: 'Core',
+};
+
+const papelInfo: Record<string, { label: string; bg: string }> = {
+  primario: { label: 'Primário', bg: '#fde2de' },
+  secundario: { label: 'Secundário', bg: '#e0f0ff' },
+  estabilizador: { label: 'Estabilizador', bg: '#fff3d6' },
+};
+
+const ordemPapel: Record<string, number> = { primario: 0, secundario: 1, estabilizador: 2 };
+
+const NEUTRO = 'rgba(0,0,0,0.06)';
+const HOVER = 'rgba(246,73,50,0.28)';
 
 interface MuscleRegion {
   id: string;
@@ -41,51 +59,82 @@ const regions: MuscleRegion[] = [
 
 export function Mapa() {
   const [selected, setSelected] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
   const [view, setView] = useState<'front' | 'back'>('front');
+  const [detalheId, setDetalheId] = useState<string | null>(null);
 
-  const exerciciosDoMusculo = selected ? repo.getExerciciosDoMusculo(selected) : [];
+  const exerciciosDoMusculo = useMemo(
+    () => (selected ? [...repo.getExerciciosDoMusculo(selected)].sort((a, b) => ordemPapel[a.papel] - ordemPapel[b.papel]) : []),
+    [selected],
+  );
   const musculoInfo = selected ? repo.getMusculos().find(m => m.id === selected) : null;
 
-  const currentRegions = regions.filter(r => r.side === view);
-
-  const getColor = (regionId: string) => {
-    if (!selected) return 'rgba(0,0,0,0.06)';
-    if (regionId === selected) return 'var(--color-muscle)';
-    const exIds = exerciciosDoMusculo.map(e => e.exercicioId);
-    const relatedMuscles = new Set<string>();
-    exIds.forEach(exId => {
-      repo.getMusculosDoExercicio(exId).forEach(em => {
-        if (em.papel === 'secundario') relatedMuscles.add(em.musculoId);
+  /** Músculos secundários nos exercícios que treinam o músculo selecionado. */
+  const relacionados = useMemo(() => {
+    const set = new Set<string>();
+    exerciciosDoMusculo.forEach(({ exercicioId }) => {
+      repo.getMusculosDoExercicio(exercicioId).forEach(em => {
+        if (em.papel === 'secundario' && em.musculoId !== selected) set.add(em.musculoId);
       });
     });
-    if (relatedMuscles.has(regionId)) return 'var(--color-muscle-secondary)';
-    return 'rgba(0,0,0,0.06)';
+    return set;
+  }, [exerciciosDoMusculo, selected]);
+
+  const currentRegions = regions.filter(r => r.side === view);
+  const selectedNaVista = !!selected && currentRegions.some(r => r.id === selected);
+
+  const getColor = (regionId: string) => {
+    if (regionId === selected) return 'var(--color-muscle)';
+    if (selected && relacionados.has(regionId)) return 'var(--color-muscle-secondary)';
+    if (regionId === hovered) return HOVER;
+    return NEUTRO;
+  };
+
+  const alternar = (id: string) => setSelected(s => (s === id ? null : id));
+
+  const trocarVista = (v: 'front' | 'back') => {
+    setView(v);
+    setHovered(null);
   };
 
   return (
     <div className="px-4 pt-6 pb-24 max-w-lg mx-auto flex flex-col gap-4">
-      <h1 className="text-[24px] font-bold tracking-tight-title">Mapa muscular</h1>
+      <PageHeader title="Mapa muscular" subtitle="Toque em um músculo para ver os exercícios" className="!mb-0" />
 
-      {/* View toggle */}
-      <div className="flex bg-canvas rounded-[var(--radius-btn)] p-1 gap-1">
-        <button
-          onClick={() => setView('front')}
-          className={`flex-1 py-2 text-[14px] font-medium rounded-[var(--radius-btn)] transition-colors duration-200 min-h-[44px] ${view === 'front' ? 'bg-surface card-border text-ink' : 'text-ink-muted'}`}
-        >
-          Frontal
-        </button>
-        <button
-          onClick={() => setView('back')}
-          className={`flex-1 py-2 text-[14px] font-medium rounded-[var(--radius-btn)] transition-colors duration-200 min-h-[44px] ${view === 'back' ? 'bg-surface card-border text-ink' : 'text-ink-muted'}`}
-        >
-          Dorsal
-        </button>
+      {/* Alternar vista */}
+      <div className="anim-fade relative flex bg-black/[0.05] rounded-[var(--radius-btn)] p-1" role="group" aria-label="Vista do corpo">
+        <span
+          aria-hidden
+          className="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-surface card-border rounded-[calc(var(--radius-btn)-2px)] transition-transform duration-200 ease-out"
+          style={{ transform: view === 'back' ? 'translateX(100%)' : 'none' }}
+        />
+        {(['front', 'back'] as const).map(v => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => trocarVista(v)}
+            aria-pressed={view === v}
+            className={`relative z-[1] flex-1 text-[14px] font-medium rounded-[var(--radius-btn)] transition-colors duration-200 min-h-[44px] focus-ring ${
+              view === v ? 'text-ink' : 'text-ink-body hover:text-ink'
+            }`}
+          >
+            {v === 'front' ? 'Frontal' : 'Dorsal'}
+          </button>
+        ))}
       </div>
 
-      {/* SVG Body */}
-      <Card className="flex items-center justify-center">
-        <svg viewBox="10 10 80 130" width="260" height="400" className="mx-auto">
-          {/* Body outline */}
+      {/* Corpo */}
+      <Card animate index={1} className="flex flex-col items-center justify-center">
+        <svg
+          key={view}
+          viewBox="10 10 80 130"
+          width="260"
+          height="400"
+          className="mx-auto max-w-full h-auto anim-fade"
+          role="group"
+          aria-label={view === 'front' ? 'Corpo, vista frontal' : 'Corpo, vista dorsal'}
+          onPointerLeave={() => setHovered(null)}
+        >
           <path
             d="M50,14 C44,14 40,18 40,22 C40,26 44,30 50,30 C56,30 60,26 60,22 C60,18 56,14 50,14z
                M50,30 C46,30 34,32 28,28 C22,34 20,40 20,46 C20,56 22,64 24,66
@@ -97,76 +146,135 @@ export function Mapa() {
                L66,48 C68,52 70,60 70,66 L76,66
                C78,64 80,56 80,46 C80,40 78,34 72,28 C66,32 54,30 50,30z"
             fill="none"
-            stroke="rgba(0,0,0,0.15)"
+            stroke="rgba(0,0,0,0.18)"
             strokeWidth="1"
+            pointerEvents="none"
           />
 
-          {/* Muscle regions */}
-          {currentRegions.map(region => (
-            <path
-              key={region.id}
-              d={region.path}
-              fill={getColor(region.id)}
-              stroke={selected === region.id ? 'var(--color-muscle)' : 'rgba(0,0,0,0.08)'}
-              strokeWidth={selected === region.id ? 1.5 : 0.5}
-              className="cursor-pointer transition-all duration-200"
-              onClick={() => setSelected(selected === region.id ? null : region.id)}
-            >
-              <title>{region.label}</title>
-            </path>
-          ))}
+          {currentRegions.map(region => {
+            const ativo = selected === region.id;
+            return (
+              <path
+                key={region.id}
+                d={region.path}
+                fill={getColor(region.id)}
+                stroke={ativo || hovered === region.id ? 'var(--color-muscle)' : 'rgba(0,0,0,0.12)'}
+                strokeWidth={ativo ? 1.5 : 0.6}
+                role="button"
+                tabIndex={0}
+                aria-label={region.label}
+                aria-pressed={ativo}
+                className="cursor-pointer outline-none focus-visible:[stroke:var(--color-brand)] focus-visible:[stroke-width:1.5]"
+                style={{ transition: 'fill 200ms ease, stroke 200ms ease, stroke-width 200ms ease' }}
+                onPointerEnter={() => setHovered(region.id)}
+                onPointerLeave={() => setHovered(h => (h === region.id ? null : h))}
+                onFocus={() => setHovered(region.id)}
+                onBlur={() => setHovered(null)}
+                onClick={() => alternar(region.id)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alternar(region.id); }
+                }}
+              >
+                <title>{region.label}</title>
+              </path>
+            );
+          })}
         </svg>
+
+        <div className="flex items-center gap-4 mt-2 text-[13px] text-ink-body" aria-hidden>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-muscle" /> Selecionado</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-muscle-secondary" /> Secundário relacionado</span>
+        </div>
       </Card>
 
-      {/* Muscle labels as pills */}
-      <div className="flex flex-wrap gap-2">
-        {currentRegions.map(region => (
-          <button key={region.id} onClick={() => setSelected(selected === region.id ? null : region.id)}>
+      {/* Rótulos */}
+      <div className="stagger flex flex-wrap gap-2" key={`pills-${view}`}>
+        {currentRegions.map(region => {
+          const ativo = selected === region.id;
+          return (
             <Pill
-              color={selected === region.id ? '#fde2de' : 'var(--color-canvas)'}
-              className={`cursor-pointer transition-colors duration-200 ${selected === region.id ? 'font-semibold' : ''}`}
+              key={region.id}
+              onClick={() => alternar(region.id)}
+              selected={ativo}
+              color={ativo ? '#fde2de' : undefined}
+              className={ativo ? 'font-semibold' : ''}
             >
-              {region.label}
+              <span
+                onPointerEnter={() => setHovered(region.id)}
+                onPointerLeave={() => setHovered(null)}
+              >
+                {region.label}
+              </span>
             </Pill>
-          </button>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Selected muscle detail */}
-      {selected && musculoInfo && (
-        <Card>
-          <h3 className="text-[17px] font-bold mb-1">{musculoInfo.nome}</h3>
-          <p className="text-[13px] text-ink-muted mb-3">{musculoInfo.grupo} · {musculoInfo.regiao}</p>
+      {/* Detalhe do músculo */}
+      {selected && musculoInfo ? (
+        <Card key={selected} animate>
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div>
+              <h3 className="text-[17px] font-bold">{musculoInfo.nome}</h3>
+              <p className="text-[14px] text-ink-body">
+                {grupoLabels[musculoInfo.grupo] ?? musculoInfo.grupo} · {musculoInfo.regiao === 'anterior' ? 'Anterior' : 'Posterior'}
+                {!selectedNaVista && ' · na outra vista'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              aria-label="Limpar seleção"
+              className="pressable focus-ring -mr-2 -mt-2 w-[44px] h-[44px] rounded-full flex items-center justify-center text-ink-body hover:bg-black/[0.05]"
+            >
+              <Icon name="x" size={20} />
+            </button>
+          </div>
 
           {exerciciosDoMusculo.length === 0 ? (
             <p className="text-[14px] text-ink-body">Nenhum exercício cadastrado para este músculo.</p>
           ) : (
-            <div className="flex flex-col gap-2">
-              <h4 className="text-[13px] text-ink-muted font-medium">EXERCÍCIOS ({exerciciosDoMusculo.length})</h4>
-              {exerciciosDoMusculo.map(({ exercicio, papel }) => (
-                <div key={exercicio.id} className="flex items-center justify-between py-2 border-b border-black/[0.05] last:border-0">
-                  <div>
-                    <span className="text-[14px] font-medium">{exercicio.nome}</span>
-                    <div className="flex gap-1.5 mt-0.5">
-                      <Pill color={papel === 'primario' ? '#fde2de' : papel === 'secundario' ? '#e0f0ff' : '#fff3d6'}>
-                        <span className="text-[11px]">{papel}</span>
-                      </Pill>
-                      <span className="text-[12px] text-ink-muted">{equipLabels[exercicio.equipamento]}</span>
-                    </div>
-                  </div>
-                  <Link to="/treino">
-                    <Button variant="text" className="text-[13px]">Ver</Button>
-                  </Link>
-                </div>
-              ))}
+            <div className="flex flex-col">
+              <h4 className="text-[13px] text-ink-body font-semibold tracking-wide mb-1">EXERCÍCIOS ({exerciciosDoMusculo.length})</h4>
+              <ul className="stagger flex flex-col">
+                {exerciciosDoMusculo.map(({ exercicio, papel }) => (
+                  <li key={exercicio.id} className="border-b border-black/[0.06] last:border-0">
+                    <button
+                      type="button"
+                      onClick={() => setDetalheId(exercicio.id)}
+                      className="pressable-soft focus-ring w-full min-h-[56px] py-2 flex items-center justify-between gap-3 text-left rounded-[var(--radius-btn)] hover:bg-black/[0.02]"
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-[14px] font-medium text-ink">{exercicio.nome}</span>
+                        <span className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <Pill color={papelInfo[papel].bg}>{papelInfo[papel].label}</Pill>
+                          <span className="text-[13px] text-ink-body">{equipLabels[exercicio.equipamento]}</span>
+                        </span>
+                      </span>
+                      <Icon name="chevron-right" size={20} className="text-ink-body shrink-0" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </Card>
+      ) : (
+        <Card animate index={2} padding={8}>
+          <EmptyState
+            compact
+            illustration={<HeartPulse size={40} />}
+            title="Nenhum músculo selecionado"
+            description="Toque em uma região do corpo ou em um nome acima."
+          />
+        </Card>
       )}
 
-      <p className="text-[12px] text-ink-muted text-center">
+      <p className="text-[13px] text-ink-body text-center">
         Dados anatômicos simplificados, a revisar por profissional de Educação Física.
       </p>
+
+      <ExercicioDetalhesSheet exercicioId={detalheId} onClose={() => setDetalheId(null)} />
     </div>
   );
 }

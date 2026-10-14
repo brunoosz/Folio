@@ -39,6 +39,8 @@ export interface FichaModeloItem {
 export interface FichaModelo {
   id: string;
   nome: string;
+  /** Letra/código curto exibido na linha do tempo (ex.: "A"). */
+  sigla?: string;
   diaSemana: number | null;
   itens: FichaModeloItem[];
 }
@@ -53,6 +55,10 @@ export interface SessaoItem {
   cargaKg: number | null;
   notas: string;
   concluido: boolean;
+  /** Item da ficha modelo que originou este item (para "atualizar na ficha padrão"). */
+  fichaItemId?: string;
+  /** Descanso sugerido entre séries, em segundos. */
+  descansoSeg?: number;
 }
 
 export interface SessaoDodia {
@@ -61,6 +67,9 @@ export interface SessaoDodia {
   data: string;
   status: SessaoStatus;
   itens: SessaoItem[];
+  /** ISO (com hora) de quando o treino foi iniciado/concluído. */
+  iniciadaEm?: string;
+  concluidaEm?: string;
 }
 
 export type HomeBlocoTipo = 'treino_do_dia' | 'linha_do_tempo' | 'pilula_cientifica' | 'atalhos_mapa';

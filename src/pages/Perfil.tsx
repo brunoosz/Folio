@@ -1,129 +1,243 @@
-import { Link } from 'react-router-dom';
+import { useCallback, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { Button, IconButton } from '../components/ui/Button';
 import { AvatarMark } from '../components/ui/AvatarMark';
 import { Pill } from '../components/ui/Pill';
+import { Icon, type IconName } from '../components/ui/Icon';
+import { PageHeader } from '../components/ui/PageHeader';
+import { ProgressBar } from '../components/ui/ProgressBar';
+import { Sheet } from '../components/ui/Sheet';
 import { useAuthStore } from '../hooks/useAuthStore';
 import { useRotinaStore } from '../hooks/useRotinaStore';
 import { useTreinoStore } from '../hooks/useTreinoStore';
-import { RestingPerson } from '../components/illustrations';
+import { addDiasISO, hojeLocal } from '../data/date';
+import { LineChart } from './Historico';
 
-function ProgressoChart({ dados, cor, label }: { dados: { data: string; valor: number }[]; cor: string; label: string }) {
-  const max = Math.max(...dados.map(d => d.valor), 1);
-  const w = 280;
-  const h = 80;
-  const step = w / (dados.length - 1 || 1);
+function iniciais(nome: string | undefined) {
+  if (!nome) return '?';
+  const partes = nome.trim().split(/\s+/).filter(Boolean);
+  return ((partes[0]?.[0] ?? '') + (partes.length > 1 ? partes[partes.length - 1][0] : '')).toUpperCase() || '?';
+}
 
-  const points = dados.map((d, i) => `${i * step},${h - (d.valor / max) * (h - 10)}`).join(' ');
-  const areaPoints = `0,${h} ${points} ${(dados.length - 1) * step},${h}`;
-
+function LinkCard({
+  icon,
+  cor,
+  fundo,
+  titulo,
+  descricao,
+  onClick,
+  index,
+}: {
+  icon: IconName;
+  cor: string;
+  fundo: string;
+  titulo: string;
+  descricao: string;
+  onClick: () => void;
+  index: number;
+}) {
   return (
-    <div>
-      <h4 className="text-[13px] text-ink-muted font-medium mb-2">{label}</h4>
-      <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} className="overflow-visible">
-        <polygon points={areaPoints} fill={cor} opacity="0.1" />
-        <polyline points={points} fill="none" stroke={cor} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-        {dados.map((d, i) => (
-          <circle key={i} cx={i * step} cy={h - (d.valor / max) * (h - 10)} r="3" fill={cor} />
-        ))}
-      </svg>
-      <div className="flex justify-between mt-1">
-        <span className="text-[10px] text-ink-muted">{dados[0]?.data.slice(5)}</span>
-        <span className="text-[10px] text-ink-muted">{dados[dados.length - 1]?.data.slice(5)}</span>
+    <Card interactive animate index={index} padding={16} onClick={onClick} aria-label={titulo}>
+      <div className="flex items-center gap-3">
+        <div className="w-11 h-11 rounded-[var(--radius-btn)] flex items-center justify-center shrink-0" style={{ background: fundo }}>
+          <Icon name={icon} size={22} color={cor} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="block text-[15px] font-semibold text-ink">{titulo}</span>
+          <span className="block text-[13px] text-ink-body truncate">{descricao}</span>
+        </div>
+        <Icon name="chevron-right" size={20} color="var(--color-ink-body)" />
       </div>
-    </div>
+    </Card>
   );
 }
 
 export function Perfil() {
-  const { usuario, logout } = useAuthStore();
-  const { habitos, getHistorico } = useRotinaStore();
-  const { sessao } = useTreinoStore();
+  const navigate = useNavigate();
+  const usuario = useAuthStore(s => s.usuario);
+  const logout = useAuthStore(s => s.logout);
+  const habitos = useRotinaStore(s => s.habitos);
+  const registros = useRotinaStore(s => s.registros);
+  const sessao = useTreinoStore(s => s.sessao);
+  const [confirmarSaida, setConfirmarSaida] = useState(false);
+  const fecharConfirmacao = useCallback(() => setConfirmarSaida(false), []);
 
+  const isAdmin = usuario?.role === 'admin';
+  const hoje = hojeLocal();
   const concluidos = sessao.itens.filter(i => i.concluido).length;
   const total = sessao.itens.length;
 
-  const aguaHist = getHistorico('hab_agua', 14);
-  const sonoHist = getHistorico('hab_sono', 14);
+  // Derivado de forma reativa a partir de `registros` (atualiza ao registrar hábitos).
+  const habitosHoje = useMemo(
+    () =>
+      habitos.slice(0, 3).map(h => {
+        const valor = registros.find(r => r.habitoId === h.id && r.data === hoje)?.valor ?? 0;
+        const meta = Math.max(1, h.meta ?? 1);
+        return { ...h, valor, meta };
+      }),
+    [habitos, registros, hoje],
+  );
+
+  const historico14 = useCallback(
+    (habitoId: string) => {
+      const out: { x: string; y: number }[] = [];
+      for (let i = 13; i >= 0; i--) {
+        const data = addDiasISO(hoje, -i);
+        out.push({ x: data, y: registros.find(r => r.habitoId === habitoId && r.data === data)?.valor ?? 0 });
+      }
+      return out;
+    },
+    [registros, hoje],
+  );
+  const agua = useMemo(() => historico14('hab_agua'), [historico14]);
+  const sono = useMemo(() => historico14('hab_sono'), [historico14]);
+  const temDados = agua.some(d => d.y > 0) || sono.some(d => d.y > 0);
+
+  const sair = () => {
+    setConfirmarSaida(false);
+    logout();
+    navigate('/', { replace: true });
+  };
+
+  let idx = 0;
 
   return (
-    <div className="px-4 pt-6 pb-24 max-w-lg mx-auto flex flex-col gap-4">
-      <h1 className="text-[24px] font-bold tracking-tight-title">Perfil</h1>
+    <div className="px-4 pt-6 pb-24 max-w-lg mx-auto flex flex-col gap-3">
+      <PageHeader
+        title="Perfil"
+        className="!mb-1"
+        right={<IconButton icon="settings" label="Configurações" onClick={() => navigate('/configuracoes')} />}
+      />
 
-      {/* User card */}
-      <Card>
+      {/* Usuário */}
+      <Card animate index={idx++} padding={20}>
         <div className="flex items-center gap-4">
-          <AvatarMark accentColor="var(--color-brand)" size={56}>
-            <RestingPerson size={32} color="var(--color-brand)" />
-          </AvatarMark>
-          <div className="flex-1">
-            <h2 className="text-[17px] font-bold">{usuario?.nome ?? 'Usuário'}</h2>
-            <p className="text-[13px] text-ink-body">{usuario?.email}</p>
-            <Pill color="var(--color-brand-ghost)" className="mt-1">
-              <span className="text-[11px] text-brand">{usuario?.role === 'admin' ? 'Administrador' : 'Usuário'}</span>
-            </Pill>
-          </div>
-        </div>
-      </Card>
-
-      {/* Today summary */}
-      <Card>
-        <h3 className="text-[15px] font-semibold mb-3">Resumo de hoje</h3>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="text-center">
-            <div className="text-[24px] font-bold text-muscle">{concluidos}/{total}</div>
-            <div className="text-[11px] text-ink-muted">Exercícios</div>
-          </div>
-          {habitos.slice(0, 2).map(h => {
-            const reg = useRotinaStore.getState().getRegistroHoje(h.id);
-            return (
-              <div key={h.id} className="text-center">
-                <div className="text-[24px] font-bold" style={{ color: h.cor }}>{reg.valor}/{h.meta}</div>
-                <div className="text-[11px] text-ink-muted">{h.nome}</div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* Historico link */}
-      <Link to="/historico">
-        <Card>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-[36px] h-[36px] rounded-[var(--radius-btn)] bg-brand-ghost flex items-center justify-center">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-muscle)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                </svg>
-              </div>
-              <div>
-                <span className="text-[14px] font-medium">Histórico de treinos</span>
-                <p className="text-[12px] text-ink-muted">Progressão de carga e volume</p>
-              </div>
+          <AvatarMark accentColor="var(--color-brand)" size={60} initials={iniciais(usuario?.nome)} animate />
+          <div className="flex-1 min-w-0">
+            <h2 className="text-[18px] font-bold text-ink truncate">{usuario?.nome ?? 'Usuário'}</h2>
+            {usuario?.email && <p className="text-[14px] text-ink-body truncate">{usuario.email}</p>}
+            <div className="mt-1.5">
+              <Pill icon={isAdmin ? 'shield' : 'user'} textColor="#005fb3">
+                {isAdmin ? 'Administrador' : 'Usuário'}
+              </Pill>
             </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-ink-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
           </div>
-        </Card>
-      </Link>
-
-      {/* Progress charts */}
-      <Card>
-        <h3 className="text-[15px] font-semibold mb-4">Progressão — 14 dias</h3>
-        <div className="flex flex-col gap-6">
-          <ProgressoChart dados={aguaHist} cor="var(--color-muscle-secondary)" label="Água (copos/dia)" />
-          <ProgressoChart dados={sonoHist} cor="var(--color-science)" label="Sono (horas/dia)" />
         </div>
       </Card>
 
-      {usuario?.role === 'admin' && (
-        <Link to="/admin">
-          <Button variant="ghost" className="w-full">Painel Admin</Button>
-        </Link>
+      {/* Resumo de hoje */}
+      <Card animate index={idx++} padding={20}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[16px] font-semibold text-ink">Resumo de hoje</h3>
+          <span className="text-[13px] text-ink-body">
+            {(d => d.charAt(0).toUpperCase() + d.slice(1))(new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }))}
+          </span>
+        </div>
+        <div className="flex flex-col gap-4">
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="inline-flex items-center gap-2 text-[14px] text-ink">
+                <Icon name="dumbbell" size={18} color="var(--color-muscle)" />
+                Treino
+              </span>
+              <span className="text-[14px] font-semibold tabular text-ink">
+                {total === 0 ? 'Descanso' : `${concluidos}/${total}`}
+              </span>
+            </div>
+            <ProgressBar
+              value={total ? concluidos / total : 0}
+              color="var(--color-muscle)"
+              label={`Treino: ${concluidos} de ${total} exercícios`}
+            />
+          </div>
+          {habitosHoje.map(h => (
+            <div key={h.id}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="inline-flex items-center gap-2 text-[14px] text-ink">
+                  <Icon name={h.icone} size={18} color={h.cor} />
+                  {h.nome}
+                </span>
+                <span className="text-[14px] font-semibold tabular text-ink">
+                  {h.valor}/{h.meta}
+                  {h.unidade && <span className="font-normal text-ink-body"> {h.unidade}</span>}
+                </span>
+              </div>
+              <ProgressBar value={h.valor / h.meta} color={h.cor} label={`${h.nome}: ${h.valor} de ${h.meta}`} />
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Links */}
+      <LinkCard
+        index={idx++}
+        icon="history"
+        cor="var(--color-muscle)"
+        fundo="#feecea"
+        titulo="Histórico de treinos"
+        descricao="Sessões, carga e volume"
+        onClick={() => navigate('/historico')}
+      />
+      <LinkCard
+        index={idx++}
+        icon="book"
+        cor="var(--color-science)"
+        fundo="var(--color-brand-ghost)"
+        titulo="Biblioteca científica"
+        descricao="Artigos sobre treino e saúde"
+        onClick={() => navigate('/biblioteca')}
+      />
+      <LinkCard
+        index={idx++}
+        icon="settings"
+        cor="var(--color-ink)"
+        fundo="rgba(0,0,0,0.05)"
+        titulo="Configurações"
+        descricao="Assistente IA, animações e dados"
+        onClick={() => navigate('/configuracoes')}
+      />
+      {isAdmin && (
+        <LinkCard
+          index={idx++}
+          icon="shield"
+          cor="#b37a00"
+          fundo="#fff4dc"
+          titulo="Painel Admin"
+          descricao="Catálogo, IA e materiais"
+          onClick={() => navigate('/admin')}
+        />
       )}
 
-      <Button variant="ghost" onClick={logout} className="w-full">Sair da conta</Button>
+      {/* Progressão */}
+      <Card animate index={idx++} padding={20}>
+        <h3 className="text-[16px] font-semibold text-ink mb-1">Rotina — últimos 14 dias</h3>
+        <p className="text-[13px] text-ink-body mb-4">
+          {temDados ? 'Registros diários de água e sono.' : 'Registre água e sono na Rotina para ver a evolução.'}
+        </p>
+        <div className="flex flex-col gap-6">
+          <LineChart dados={agua} cor="var(--color-muscle-secondary)" label="Água" unidade="copos" />
+          <LineChart dados={sono} cor="var(--color-science)" label="Sono" unidade="h" />
+        </div>
+      </Card>
+
+      <div className="anim-fade flex justify-center pt-2" style={{ animationDelay: '320ms' }}>
+        <Button variant="text" icon="logout" onClick={() => setConfirmarSaida(true)} className="!text-vermillion">
+          Sair da conta
+        </Button>
+      </div>
+
+      <Sheet open={confirmarSaida} onClose={fecharConfirmacao} title="Sair da conta?" variant="modal">
+        <div className="px-5">
+          <p className="text-[15px] text-ink-body leading-relaxed mb-5">
+            Seus treinos e registros continuam salvos neste aparelho. Para entrar de novo, use seu usuário e senha.
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button variant="ghost" onClick={fecharConfirmacao}>Cancelar</Button>
+            <Button variant="danger" icon="logout" onClick={sair}>Sair</Button>
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 }

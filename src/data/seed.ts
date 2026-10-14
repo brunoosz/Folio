@@ -1,3 +1,4 @@
+import { hojeLocal } from './date';
 import type { Musculo, Exercicio, ExercicioMusculo, FichaModelo, FichaModeloItem, SessaoDodia, SessaoItem } from './types';
 
 export const musculos: Musculo[] = [
@@ -102,6 +103,7 @@ export const fichasModelo: FichaModelo[] = [
   {
     id: fichaAId,
     nome: 'Treino A — Pernas e Glúteos',
+    sigla: 'A',
     diaSemana: 1,
     itens: [
       { id: 'fmi01', fichaId: fichaAId, exercicioId: 'ex01', ordem: 0, series: 4, reps: '8-10', descansoSeg: 120, notas: '' },
@@ -116,6 +118,7 @@ export const fichasModelo: FichaModelo[] = [
   {
     id: fichaBId,
     nome: 'Treino B — Peito, Costas e Braços',
+    sigla: 'B',
     diaSemana: 3,
     itens: [
       { id: 'fmi08', fichaId: fichaBId, exercicioId: 'ex06', ordem: 0, series: 4, reps: '8-10', descansoSeg: 120, notas: '' },
@@ -130,30 +133,54 @@ export const fichasModelo: FichaModelo[] = [
   },
 ];
 
-function criarSessaoHoje(ficha: FichaModelo): SessaoDodia {
-  const sessaoId = `sessao_${ficha.id}_hoje`;
-  const itens: SessaoItem[] = ficha.itens.map((item, i) => ({
-    id: `si_${ficha.id}_${i}`,
-    sessaoId,
-    exercicioId: item.exercicioId,
-    ordem: item.ordem,
-    series: item.series,
-    reps: item.reps,
-    cargaKg: null,
-    notas: item.notas,
-    concluido: false,
-  }));
-  return {
-    id: sessaoId,
-    fichaModeloId: ficha.id,
-    data: new Date().toISOString().slice(0, 10),
-    status: 'pendente',
-    itens,
-  };
+/** Letra curta da ficha para a linha do tempo (robusto a nomes livres). */
+export function siglaDaFicha(ficha: Pick<FichaModelo, 'nome' | 'sigla'>): string {
+  if (ficha.sigla?.trim()) return ficha.sigla.trim().slice(0, 2).toUpperCase();
+  const m = ficha.nome.match(/treino\s+([a-z0-9]{1,2})\b/i);
+  if (m) return m[1].toUpperCase();
+  const first = ficha.nome.trim().charAt(0);
+  return first ? first.toUpperCase() : 'T';
 }
 
-export function getSessaoHoje(): SessaoDodia {
-  const dow = new Date().getDay();
-  const ficha = fichasModelo.find(f => f.diaSemana === dow) ?? fichasModelo[0];
-  return criarSessaoHoje(ficha);
+/**
+ * Ficha do dia da semana; se não houver ficha agendada para hoje,
+ * usa a próxima agendada na semana (ou a primeira cadastrada).
+ */
+export function fichaDoDia(fichas: FichaModelo[], dow: number = new Date().getDay()): FichaModelo | undefined {
+  if (!fichas.length) return undefined;
+  for (let k = 0; k < 7; k++) {
+    const f = fichas.find(fi => fi.diaSemana === (dow + k) % 7);
+    if (f) return f;
+  }
+  return fichas[0];
+}
+
+export function criarSessao(ficha: FichaModelo, data: string = hojeLocal()): SessaoDodia {
+  const sessaoId = `sessao_${ficha.id}_${data}`;
+  const itens: SessaoItem[] = [...ficha.itens]
+    .sort((a, b) => a.ordem - b.ordem)
+    .map((item: FichaModeloItem, i) => ({
+      id: `si_${item.id}`,
+      sessaoId,
+      exercicioId: item.exercicioId,
+      ordem: i,
+      series: item.series,
+      reps: item.reps,
+      cargaKg: null,
+      notas: item.notas,
+      concluido: false,
+      fichaItemId: item.id,
+      descansoSeg: item.descansoSeg,
+    }));
+  return { id: sessaoId, fichaModeloId: ficha.id, data, status: 'pendente', itens };
+}
+
+/** Sessão vazia (quando não há nenhuma ficha cadastrada). */
+export function sessaoVazia(data: string = hojeLocal()): SessaoDodia {
+  return { id: `sessao_vazia_${data}`, fichaModeloId: '', data, status: 'pendente', itens: [] };
+}
+
+export function getSessaoHoje(fichas: FichaModelo[] = fichasModelo): SessaoDodia {
+  const ficha = fichaDoDia(fichas);
+  return ficha ? criarSessao(ficha) : sessaoVazia();
 }

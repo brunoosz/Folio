@@ -1,229 +1,391 @@
-import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { useEffect, useMemo, type CSSProperties } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type Modifier,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { Button, IconButton } from '../components/ui/Button';
 import { Pill } from '../components/ui/Pill';
+import { Icon, type IconName } from '../components/ui/Icon';
 import { AvatarMark } from '../components/ui/AvatarMark';
+import { ProgressBar } from '../components/ui/ProgressBar';
 import { useHomeStore } from '../hooks/useHomeStore';
 import { useTreinoStore } from '../hooks/useTreinoStore';
+import { useAuthStore } from '../hooks/useAuthStore';
 import { repo } from '../data/repository';
-import { ExercisingPerson, Sparkle, HeartPulse } from '../components/illustrations';
+import { siglaDaFicha } from '../data/seed';
+import { artigos } from '../data/ciencia';
+import { formatDataLonga, saudacao } from '../data/date';
+import { ExercisingPerson, RestingPerson, Sparkle, HeartPulse } from '../components/illustrations';
 import type { HomeBlocoConfig, HomeBlocoTipo } from '../data/types';
 
 const blocoLabels: Record<HomeBlocoTipo, string> = {
   treino_do_dia: 'Treino do dia',
   linha_do_tempo: 'Linha do tempo',
   pilula_cientifica: 'Pílula científica',
-  atalhos_mapa: 'Atalhos do mapa',
+  atalhos_mapa: 'Atalho do mapa muscular',
 };
 
-function SortableBloco({ bloco, children }: { bloco: HomeBlocoConfig; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: bloco.tipo });
-  return (
-    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} {...attributes} {...listeners}>
-      {children}
-    </div>
-  );
-}
+const DIAS_CURTOS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const DIAS_LONGOS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
-function BlocoTreinoDoDia() {
+const restrictToVerticalAxis: Modifier = ({ transform }) => ({ ...transform, x: 0 });
+
+/* ---------- Blocos ---------- */
+
+function BlocoTreinoDoDia({ index }: { index: number }) {
+  const navigate = useNavigate();
   const sessao = useTreinoStore(s => s.sessao);
-  const fichas = repo.getFichas();
-  const ficha = fichas.find(f => f.id === sessao.fichaModeloId);
+  const ficha = useMemo(() => repo.getFichas().find(f => f.id === sessao.fichaModeloId), [sessao.fichaModeloId]);
+  const total = sessao.itens.length;
   const concluidos = sessao.itens.filter(i => i.concluido).length;
+  const concluida = sessao.status === 'concluida';
+
+  if (!total) {
+    return (
+      <Card animate index={index}>
+        <div className="flex items-center gap-3">
+          <AvatarMark accentColor="var(--color-routine)" size={48}><RestingPerson size={30} /></AvatarMark>
+          <div>
+            <h3 className="text-[15px] font-semibold">Dia livre</h3>
+            <p className="text-[14px] text-ink-body">Nenhuma ficha de treino cadastrada.</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  const rotulo = sessao.status === 'pendente' ? 'Iniciar treino' : sessao.status === 'em_andamento' ? 'Continuar treino' : 'Ver treino concluído';
 
   return (
-    <Card>
+    <Card animate index={index}>
       <div className="flex items-center gap-3 mb-3">
-        <AvatarMark accentColor="var(--color-muscle)" size={44}>
-          <ExercisingPerson size={28} />
+        <AvatarMark accentColor="var(--color-muscle)" size={48} animate={concluida}>
+          <ExercisingPerson size={30} />
         </AvatarMark>
-        <div>
-          <h3 className="text-[15px] font-semibold">{ficha?.nome ?? 'Treino do dia'}</h3>
-          <p className="text-[13px] text-ink-body">{concluidos}/{sessao.itens.length} exercícios</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-semibold text-ink-body tracking-wide">TREINO DE HOJE</p>
+          <h3 className="text-[16px] font-semibold leading-snug">{ficha?.nome ?? 'Treino do dia'}</h3>
         </div>
+        {concluida && <Pill color="#e0f8e6" textColor="#1a7a3a" icon="check">Feito</Pill>}
       </div>
-      <div className="w-full bg-canvas rounded-full h-2 mb-3">
-        <div
-          className="bg-muscle rounded-full h-2 transition-all duration-200"
-          style={{ width: `${sessao.itens.length ? (concluidos / sessao.itens.length) * 100 : 0}%` }}
-        />
+      <div className="flex items-center justify-between text-[14px] text-ink-body mb-1.5">
+        <span>{concluidos} de {total} exercícios</span>
+        <span className="tabular">{Math.round((concluidos / total) * 100)}%</span>
       </div>
-      <Link to="/treino">
-        <Button variant="primary" className="w-full">
-          {sessao.status === 'pendente' ? 'Iniciar treino' : sessao.status === 'em_andamento' ? 'Continuar treino' : 'Ver treino concluído'}
-        </Button>
-      </Link>
+      <ProgressBar value={concluidos / total} color="var(--color-muscle)" label="Progresso do treino de hoje" className="mb-4" />
+      <Button
+        variant={concluida ? 'ghost' : 'primary'}
+        fullWidth
+        icon={sessao.status === 'pendente' ? 'play' : concluida ? 'check' : 'chevron-right'}
+        onClick={() => navigate('/treino')}
+      >
+        {rotulo}
+      </Button>
     </Card>
   );
 }
 
-function BlocoLinhaDoTempo() {
-  const dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const fichas = repo.getFichas();
+function BlocoLinhaDoTempo({ index }: { index: number }) {
+  const sessao = useTreinoStore(s => s.sessao);
+  const fichas = useMemo(() => repo.getFichas(), []);
   const hoje = new Date().getDay();
 
   return (
-    <Card>
-      <h3 className="text-[15px] font-semibold mb-3">Linha do tempo</h3>
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {dias.map((d, i) => {
+    <Card animate index={index}>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-[15px] font-semibold">Semana de treinos</h3>
+        <Icon name="calendar" size={20} className="text-ink-body" />
+      </div>
+      <ul className="grid grid-cols-7 gap-1" aria-label="Fichas por dia da semana">
+        {DIAS_CURTOS.map((d, i) => {
           const ficha = fichas.find(f => f.diaSemana === i);
           const isHoje = i === hoje;
+          const feitoHoje = isHoje && sessao.status === 'concluida';
+          const descricao = `${DIAS_LONGOS[i]}${isHoje ? ' (hoje)' : ''}: ${ficha ? ficha.nome : 'descanso'}${feitoHoje ? ', concluído' : ''}`;
           return (
-            <div key={i} className="flex flex-col items-center gap-1 min-w-[44px]">
-              <span className={`text-[11px] font-medium ${isHoje ? 'text-brand' : 'text-ink-muted'}`}>{d}</span>
-              <div
-                className={`w-[36px] h-[36px] rounded-[var(--radius-btn)] flex items-center justify-center text-[11px] font-medium ${
-                  isHoje ? 'bg-brand text-white' : ficha ? 'bg-routine/15 text-ink' : 'bg-canvas text-ink-muted'
+            <li
+              key={d}
+              className="flex flex-col items-center gap-1.5 anim-rise"
+              style={{ ['--i' as string]: i } as CSSProperties}
+              aria-label={descricao}
+              title={descricao}
+            >
+              <span className={`text-[12px] font-medium ${isHoje ? 'text-brand' : 'text-ink-body'}`}>{d}</span>
+              <span
+                aria-hidden
+                className={`w-[38px] h-[38px] rounded-[var(--radius-btn)] flex items-center justify-center text-[14px] font-semibold transition-colors duration-200 ${
+                  isHoje
+                    ? 'bg-brand text-white'
+                    : ficha
+                      ? 'bg-[#fff3d6] text-ink'
+                      : 'bg-black/[0.04] text-ink-body'
                 }`}
               >
-                {ficha ? ficha.nome.charAt(ficha.nome.indexOf('—') + 2) || 'T' : '·'}
-              </div>
-            </div>
+                {feitoHoje ? (
+                  <Icon name="check" size={18} strokeWidth={2.4} />
+                ) : ficha ? (
+                  siglaDaFicha(ficha)
+                ) : (
+                  <Icon name="moon" size={16} />
+                )}
+              </span>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </Card>
   );
 }
 
-function BlocoPilulaCientifica() {
+function BlocoPilulaCientifica({ index }: { index: number }) {
+  const navigate = useNavigate();
+  const artigo = useMemo(() => {
+    if (!artigos.length) return null;
+    const d = new Date();
+    const inicioAno = new Date(d.getFullYear(), 0, 0);
+    const diaDoAno = Math.floor((d.getTime() - inicioAno.getTime()) / 86400000);
+    return artigos[diaDoAno % artigos.length];
+  }, []);
+  if (!artigo) return null;
+
   return (
-    <Card accent="var(--color-brand-ghost)">
+    <Card accent="var(--color-brand-ghost)" animate index={index} interactive onClick={() => navigate('/biblioteca')} aria-label={`Pílula científica: ${artigo.titulo}. Abrir biblioteca`}>
       <div className="flex items-start gap-3">
         <AvatarMark accentColor="var(--color-science)" size={40}>
           <Sparkle size={18} color="var(--color-science)" />
         </AvatarMark>
-        <div className="flex-1">
-          <Pill color="var(--color-brand-ghost)" className="mb-2">
-            <span style={{ color: 'var(--color-science)' }}>Ciência</span>
-          </Pill>
-          <p className="text-[14px] text-ink-body leading-relaxed" style={{ fontFamily: 'var(--font-serif)' }}>
-            "O agachamento livre e o leg press <strong>não são equivalentes</strong>: o agachamento recruta estabilizadores da coluna e exige controle motor que a máquina elimina."
+        <div className="flex-1 min-w-0">
+          <Pill color="var(--color-surface)" textColor="var(--color-science)" icon="book" className="mb-2">Pílula científica</Pill>
+          <h3 className="text-[15px] font-semibold leading-snug mb-1">{artigo.titulo}</h3>
+          <p className="text-[14px] text-ink-body leading-relaxed line-clamp-4" style={{ fontFamily: 'var(--font-serif)' }}>
+            {artigo.resumo}
           </p>
-          <p className="text-[12px] text-ink-muted mt-2">
-            Consulte sempre um profissional de Educação Física.
+          <p className="text-[13px] text-ink-body mt-2">
+            {artigo.fonte}, {artigo.ano}
           </p>
+          <p className="text-[13px] text-ink-body mt-1">Consulte sempre um profissional de Educação Física.</p>
         </div>
       </div>
     </Card>
   );
 }
 
-function BlocoAtalhosMapa() {
+function BlocoAtalhosMapa({ index }: { index: number }) {
+  const navigate = useNavigate();
   return (
-    <Card>
+    <Card animate index={index} interactive onClick={() => navigate('/mapa')} aria-label="Abrir mapa muscular">
       <div className="flex items-center gap-3">
-        <AvatarMark accentColor="var(--color-muscle)" size={40}>
-          <HeartPulse size={18} />
+        <AvatarMark accentColor="var(--color-muscle)" size={44}>
+          <HeartPulse size={20} />
         </AvatarMark>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h3 className="text-[15px] font-semibold">Mapa muscular</h3>
-          <p className="text-[13px] text-ink-body">Veja quais músculos você está treinando</p>
+          <p className="text-[14px] text-ink-body">Veja quais músculos cada exercício trabalha</p>
         </div>
-        <Link to="/mapa">
-          <Button variant="ghost" className="text-[13px] px-3 py-1.5 min-h-[36px]">Ver</Button>
-        </Link>
+        <Icon name="chevron-right" size={20} className="text-ink-body" />
       </div>
     </Card>
   );
 }
 
-const blocoComponents: Record<HomeBlocoTipo, React.FC> = {
+const blocoComponents: Record<HomeBlocoTipo, React.FC<{ index: number }>> = {
   treino_do_dia: BlocoTreinoDoDia,
   linha_do_tempo: BlocoLinhaDoTempo,
   pilula_cientifica: BlocoPilulaCientifica,
   atalhos_mapa: BlocoAtalhosMapa,
 };
 
-export function Home() {
-  const { blocos, editando, toggleEditar, toggleBloco, reorder, load } = useHomeStore();
+/* ---------- Atalhos ---------- */
 
-  useEffect(() => { load(); }, [load]);
+const atalhos: { to: string; label: string; icon: IconName; color: string }[] = [
+  { to: '/assistente', label: 'Assistente', icon: 'chat', color: 'var(--color-brand)' },
+  { to: '/biblioteca', label: 'Biblioteca', icon: 'book', color: 'var(--color-science)' },
+  { to: '/historico', label: 'Histórico', icon: 'history', color: 'var(--color-muscle)' },
+];
+
+function Atalhos() {
+  const navigate = useNavigate();
+  return (
+    <nav aria-label="Atalhos" className="grid grid-cols-3 gap-3">
+      {atalhos.map((a, i) => (
+        <Card
+          key={a.to}
+          interactive
+          animate
+          index={i + 1}
+          padding={14}
+          onClick={() => navigate(a.to)}
+          aria-label={a.label}
+          className="flex flex-col items-center gap-2 text-center min-h-[88px] justify-center"
+        >
+          <span className="w-[40px] h-[40px] rounded-full bg-brand-ghost flex items-center justify-center" aria-hidden>
+            <Icon name={a.icon} size={20} color={a.color} />
+          </span>
+          <span className="text-[14px] font-medium text-ink">{a.label}</span>
+        </Card>
+      ))}
+    </nav>
+  );
+}
+
+/* ---------- Modo edição ---------- */
+
+function SortableBloco({ bloco, index, onToggle }: { bloco: HomeBlocoConfig; index: number; onToggle: () => void }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: bloco.tipo });
+  const label = blocoLabels[bloco.tipo];
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, position: 'relative', zIndex: isDragging ? 10 : undefined }}
+    >
+      <div
+        className={`anim-rise card-border rounded-[var(--radius-card)] pl-1 pr-2 py-1 flex items-center gap-1 bg-surface transition-colors duration-200 ${
+          isDragging ? 'border-brand/40' : ''
+        }`}
+        style={{ ['--i' as string]: index } as CSSProperties}
+      >
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...listeners}
+          aria-label={`Reordenar ${label}`}
+          className="focus-ring w-[44px] h-[44px] shrink-0 flex items-center justify-center rounded-[var(--radius-btn)] text-ink-body cursor-grab active:cursor-grabbing touch-none"
+        >
+          <Icon name="drag-handle" size={20} />
+        </button>
+        <span className={`flex-1 text-[15px] font-medium transition-opacity duration-200 ${bloco.visivel ? '' : 'opacity-60'}`}>{label}</span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={bloco.visivel}
+          aria-label={`Mostrar ${label}`}
+          onClick={onToggle}
+          className="focus-ring w-[56px] h-[44px] flex items-center justify-center rounded-full cursor-pointer"
+        >
+          <span
+            className={`relative w-[44px] h-[26px] rounded-full transition-colors duration-200 ${bloco.visivel ? 'bg-brand' : 'bg-black/20'}`}
+            aria-hidden
+          >
+            <span
+              className="absolute top-[2px] left-[2px] w-[22px] h-[22px] rounded-full bg-white transition-transform duration-200"
+              style={{ transform: bloco.visivel ? 'translateX(18px)' : 'none' }}
+            />
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Página ---------- */
+
+export function Home() {
+  const navigate = useNavigate();
+  const { blocos, editando, toggleEditar, setEditando, toggleBloco, reorder, load } = useHomeStore();
+  const carregarTreino = useTreinoStore(s => s.load);
+  const usuario = useAuthStore(s => s.usuario);
+
+  useEffect(() => { load(); carregarTreino(); }, [load, carregarTreino]);
+  // Sai do modo edição ao deixar a página.
+  useEffect(() => () => setEditando(false), [setEditando]);
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const handleDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
     if (over && active.id !== over.id) {
       const oldIdx = blocos.findIndex(b => b.tipo === active.id);
       const newIdx = blocos.findIndex(b => b.tipo === over.id);
-      reorder(arrayMove(blocos, oldIdx, newIdx));
+      if (oldIdx >= 0 && newIdx >= 0) reorder(arrayMove(blocos, oldIdx, newIdx));
     }
   };
 
+  const agora = new Date();
+  const primeiroNome = usuario?.nome?.trim().split(/\s+/)[0];
+  const data = formatDataLonga(agora);
+  const dataCap = data.charAt(0).toUpperCase() + data.slice(1);
+  const visiveis = blocos.filter(b => b.visivel);
+
   return (
     <div className="px-4 pt-6 pb-24 max-w-lg mx-auto flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-[24px] font-bold tracking-tight-title">Início</h1>
-        <button
-          onClick={toggleEditar}
-          className="text-[13px] font-medium text-brand min-h-[44px] min-w-[44px] flex items-center justify-center"
-        >
-          {editando ? 'Pronto' : 'Editar'}
-        </button>
-      </div>
-
-      {!editando && (
-        <div className="flex gap-3">
-          <Link to="/assistente" className="flex-1">
-            <Card>
-              <div className="flex items-center gap-3">
-                <div className="w-[36px] h-[36px] rounded-[var(--radius-btn)] bg-brand-ghost flex items-center justify-center">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                </div>
-                <span className="text-[14px] font-medium">Assistente</span>
-              </div>
-            </Card>
-          </Link>
-          <Link to="/biblioteca" className="flex-1">
-            <Card>
-              <div className="flex items-center gap-3">
-                <div className="w-[36px] h-[36px] rounded-[var(--radius-btn)] bg-brand-ghost flex items-center justify-center">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-science)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                  </svg>
-                </div>
-                <span className="text-[14px] font-medium">Biblioteca</span>
-              </div>
-            </Card>
-          </Link>
+      <header className="anim-fade flex items-start justify-between gap-2 min-h-[56px]">
+        <div className="min-w-0">
+          <p className="text-[14px] text-ink-body">{dataCap}</p>
+          <h1 className="text-[24px] font-bold tracking-tight-title leading-tight truncate">
+            {saudacao(agora)}{primeiroNome ? `, ${primeiroNome}` : ''}
+          </h1>
         </div>
-      )}
+        <div className="flex items-center shrink-0 -mr-2">
+          <button
+            type="button"
+            onClick={toggleEditar}
+            aria-pressed={editando}
+            className="pressable focus-ring text-[14px] font-medium text-brand min-h-[44px] px-3 rounded-[var(--radius-btn)] flex items-center gap-1.5 hover:bg-brand-ghost"
+          >
+            <Icon name={editando ? 'check' : 'edit'} size={18} />
+            {editando ? 'Pronto' : 'Editar'}
+          </button>
+          <IconButton icon="settings" label="Configurações" onClick={() => navigate('/configuracoes')} />
+        </div>
+      </header>
 
       {editando ? (
-        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={blocos.map(b => b.tipo)} strategy={verticalListSortingStrategy}>
-            <div className="flex flex-col gap-2">
-              {blocos.map(bloco => (
-                <SortableBloco key={bloco.tipo} bloco={bloco}>
-                  <div className={`card-border rounded-[var(--radius-card)] p-4 flex items-center justify-between bg-surface ${!bloco.visivel ? 'opacity-40' : ''}`}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-ink-muted cursor-grab">☰</span>
-                      <span className="text-[14px] font-medium">{blocoLabels[bloco.tipo]}</span>
-                    </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); toggleBloco(bloco.tipo); }}
-                      className={`w-[44px] h-[26px] rounded-full transition-colors duration-200 ${bloco.visivel ? 'bg-brand' : 'bg-ink-muted/20'}`}
-                    >
-                      <div className={`w-[22px] h-[22px] rounded-full bg-white shadow-sm transition-transform duration-200 ${bloco.visivel ? 'translate-x-[20px]' : 'translate-x-[2px]'}`} />
-                    </button>
-                  </div>
-                </SortableBloco>
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <section className="flex flex-col gap-3" aria-label="Personalizar início">
+          <p className="anim-fade text-[14px] text-ink-body">
+            Arraste pelo ícone para reordenar e use as chaves para mostrar ou ocultar blocos.
+          </p>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
+            <SortableContext items={blocos.map(b => b.tipo)} strategy={verticalListSortingStrategy}>
+              <div className="flex flex-col gap-2">
+                {blocos.map((bloco, i) => (
+                  <SortableBloco key={bloco.tipo} bloco={bloco} index={i} onToggle={() => toggleBloco(bloco.tipo)} />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </section>
       ) : (
-        blocos.filter(b => b.visivel).map(bloco => {
-          const Comp = blocoComponents[bloco.tipo];
-          return <Comp key={bloco.tipo} />;
-        })
+        <>
+          <Atalhos />
+          {visiveis.length === 0 ? (
+            <Card animate index={4}>
+              <div className="flex flex-col items-center text-center gap-2 py-4">
+                <Icon name="eye-off" size={32} className="text-ink-body" />
+                <p className="text-[15px] font-semibold">Todos os blocos estão ocultos</p>
+                <Button variant="text" onClick={() => setEditando(true)}>Personalizar início</Button>
+              </div>
+            </Card>
+          ) : (
+            visiveis.map((bloco, i) => {
+              const Comp = blocoComponents[bloco.tipo];
+              return <Comp key={bloco.tipo} index={i + 4} />;
+            })
+          )}
+        </>
       )}
     </div>
   );
 }
+

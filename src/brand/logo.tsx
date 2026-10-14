@@ -33,14 +33,14 @@ export function LogoMark({ size = 48, className = '' }: { size?: number; classNa
   );
 }
 
-export function Wordmark({ className = '' }: { className?: string }) {
+export function Wordmark({ className = '', size = 28 }: { className?: string; size?: number }) {
   return (
     <span
       className={className}
       style={{
         fontFamily: "'Inter', system-ui, sans-serif",
         fontWeight: 700,
-        fontSize: '28px',
+        fontSize: size,
         letterSpacing: '-0.02em',
         color: '#111111',
       }}

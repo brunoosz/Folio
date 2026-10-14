@@ -1,5 +1,6 @@
-@import 'tailwindcss';
+/* A @import de fontes precisa vir antes de qualquer regra (o tailwindcss é expandido inline). */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
+@import 'tailwindcss';
 
 @theme {
   --color-canvas: #f6f5f4;
@@ -27,18 +28,190 @@
   --font-serif: 'Source Serif 4', Georgia, serif;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* Base em @layer para que os utilitários do Tailwind (p-*, m-*) possam sobrescrevê-la. */
+@layer base {
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { -webkit-tap-highlight-color: transparent; }
+  html { -webkit-tap-highlight-color: transparent; }
 
-body {
-  font-family: var(--font-ui);
-  background: var(--color-canvas);
-  color: var(--color-ink);
-  -webkit-font-smoothing: antialiased;
-  min-height: 100dvh;
+  body {
+    font-family: var(--font-ui);
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+  }
 }
 
-.card-border { border: 1px solid rgba(0,0,0,0.08); }
+/* Android (Capacitor, edge-to-edge) e notch: o conteúdo não fica sob a barra de status.
+   Na web e no desktop o valor é 0. */
+#root { padding-top: env(safe-area-inset-top, 0px); }
+
+@layer components {
+  .card-border { border: 1px solid rgba(0,0,0,0.08); }
+}
 
 .tracking-tight-title { letter-spacing: -0.02em; }
+
+/* =========================================================
+   Motion system — transform/opacity only.
+   Collapses to no motion under prefers-reduced-motion.
+   ========================================================= */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-std: ease;
+  --dur: 200ms;
+  --dur-enter: 320ms;
+  --stagger: 45ms;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+html { scroll-behavior: smooth; }
+::selection { background: var(--color-brand-ghost); color: var(--color-ink); }
+
+/* Focus ring (accessibility) */
+:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+.focus-ring:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 0; }
+
+@keyframes f-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes f-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes f-rise-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes f-page-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes f-scale-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes f-sheet-in { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes f-sheet-out { from { transform: none; } to { transform: translateY(100%); } }
+@keyframes f-toast-in { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes f-toast-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(0.98); } }
+@keyframes f-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+@keyframes f-pop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes f-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes f-spin { to { transform: rotate(360deg); } }
+@keyframes f-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes f-wiggle { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+@keyframes f-draw { to { stroke-dashoffset: 0; } }
+
+/* Page enter — put on page root (App already wraps each route in .page-enter) */
+.page-enter { animation: f-page-in var(--dur-enter) var(--ease-out) backwards; }
+
+/* Entrance utilities. Stagger: style={{ '--i': index } as React.CSSProperties} */
+.anim-fade { animation: f-fade-in var(--dur-enter) var(--ease-std) backwards; animation-delay: calc(var(--i, 0) * var(--stagger)); }
+.anim-rise { animation: f-rise-in var(--dur-enter) var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * var(--stagger)); }
+.anim-scale { animation: f-scale-in var(--dur-enter) var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * var(--stagger)); }
+.anim-pop { animation: f-pop 360ms var(--ease-out) backwards; }
+/* Parent-driven stagger: children of .stagger get rise-in, delay by nth-child (up to 12) */
+.stagger > * { animation: f-rise-in var(--dur-enter) var(--ease-out) backwards; }
+.stagger > *:nth-child(2) { animation-delay: 45ms; }
+.stagger > *:nth-child(3) { animation-delay: 90ms; }
+.stagger > *:nth-child(4) { animation-delay: 135ms; }
+.stagger > *:nth-child(5) { animation-delay: 180ms; }
+.stagger > *:nth-child(6) { animation-delay: 225ms; }
+.stagger > *:nth-child(7) { animation-delay: 270ms; }
+.stagger > *:nth-child(8) { animation-delay: 315ms; }
+.stagger > *:nth-child(9) { animation-delay: 360ms; }
+.stagger > *:nth-child(10) { animation-delay: 405ms; }
+.stagger > *:nth-child(11) { animation-delay: 450ms; }
+.stagger > *:nth-child(n+12) { animation-delay: 495ms; }
+
+/* Press / tap feedback */
+.pressable { transition: transform var(--dur) var(--ease-std), background-color var(--dur) var(--ease-std), border-color var(--dur) var(--ease-std), opacity var(--dur) var(--ease-std); }
+.pressable:active:not(:disabled):not([aria-disabled='true']) { transform: scale(0.97); }
+.pressable-soft { transition: transform var(--dur) var(--ease-std), border-color var(--dur) var(--ease-std), background-color var(--dur) var(--ease-std); }
+.pressable-soft:active { transform: scale(0.985); }
+@media (hover: hover) {
+  .hover-lift:hover { border-color: rgba(0,0,0,0.16); }
+}
+
+/* Modals & bottom sheets */
+.backdrop-enter { animation: f-fade-in var(--dur) var(--ease-std) both; }
+.backdrop-exit { animation: f-fade-out var(--dur) var(--ease-std) both; }
+.modal-enter { animation: f-scale-in 240ms var(--ease-out) both; }
+.modal-exit { animation: f-fade-out var(--dur) var(--ease-std) both; }
+.sheet-enter { animation: f-sheet-in 280ms var(--ease-out) both; }
+.sheet-exit { animation: f-sheet-out var(--dur) var(--ease-std) both; }
+.toast-enter { animation: f-toast-in 240ms var(--ease-out) both; }
+.toast-exit { animation: f-toast-out var(--dur) var(--ease-std) both; }
+
+/* Skeleton / shimmer (flat, no gradient: a translucent bar slides across) */
+.skeleton { position: relative; overflow: hidden; background: rgba(0,0,0,0.06); border-radius: 8px; }
+.skeleton::after { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,0.5); transform: translateX(-100%); animation: f-shimmer 1.2s ease-in-out infinite; }
+
+/* Progress & numbers */
+.progress-track { background: rgba(0,0,0,0.06); border-radius: 9999px; overflow: hidden; height: 8px; }
+.progress-fill { height: 100%; width: 100%; border-radius: inherit; background: var(--color-brand); transform-origin: left center; transition: transform 480ms var(--ease-out); }
+.num-tick { display: inline-block; animation: f-pop 320ms var(--ease-out); }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Misc */
+.spin { animation: f-spin 0.8s linear infinite; }
+.pulse { animation: f-pulse 1.4s ease-in-out infinite; }
+.transition-std { transition: all var(--dur) var(--ease-std); }
+/* Characters/illustrations only — spring allowed */
+.illo-float { animation: f-float 2.4s ease-in-out infinite; }
+.illo-wiggle:hover { animation: f-wiggle 0.5s var(--ease-spring); }
+.illo-spring { animation: f-pop 520ms var(--ease-spring) backwards; }
+
+/* Bottom nav indicator */
+.nav-indicator { position: absolute; top: 0; left: 0; height: 3px; border-radius: 0 0 3px 3px; background: var(--color-brand); transition: transform 280ms var(--ease-out); }
+.nav-item-icon { transition: transform var(--dur) var(--ease-std); }
+.nav-item[aria-current='page'] .nav-item-icon { transform: translateY(-1px); }
+
+/* Safe bottom padding for pages that have BottomNav */
+.pb-nav { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .skeleton::after { display: none; }
+}
+/* Mesmo efeito quando o usuário liga "Reduzir animações" em Configurações */
+html.reduce-motion { scroll-behavior: auto; }
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0ms !important;
+  transition-duration: 0.01ms !important;
+}
+html.reduce-motion .skeleton::after { display: none; }
+
+/* =========================================================
+   Splash / abertura (~2.2s)
+   ========================================================= */
+.splash { position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--color-canvas); cursor: pointer; }
+.splash.is-exit { animation: f-fade-out 320ms ease 40ms both; pointer-events: none; }
+.splash.is-exit .splash-stage { animation: splash-out 360ms var(--ease-out) both; }
+@keyframes splash-out { to { transform: scale(1.04) translateY(-6px); opacity: 0; } }
+
+.splash-logo { overflow: visible; }
+.splash-logo .sp-stroke { stroke-dasharray: 1; stroke-dashoffset: 1; animation: f-draw 620ms cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+.splash-logo .sp-p1 { animation-delay: 0ms; }
+.splash-logo .sp-p2 { animation-delay: 90ms; }
+.splash-logo .sp-p3 { animation-delay: 180ms; }
+.splash-logo .sp-paper { opacity: 0; animation: f-fade-in 260ms ease 620ms forwards; }
+.splash-logo .sp-vert { transform-box: fill-box; transform-origin: center; opacity: 0; animation: f-pop 360ms var(--ease-spring) forwards; animation-delay: calc(640ms + var(--i, 0) * 60ms); }
+.splash-logo .sp-f-mask { transform-box: fill-box; transform-origin: center bottom; transform: scaleY(0); animation: splash-fill 460ms var(--ease-out) 820ms forwards; }
+@keyframes splash-fill { to { transform: scaleY(1); } }
+.splash-logo .sp-f-outline { stroke-dasharray: 1; stroke-dashoffset: 1; animation: f-draw 420ms ease 560ms forwards; }
+.splash-word { opacity: 0; animation: f-rise-in 440ms var(--ease-out) 1080ms both; }
+.splash-slogan { opacity: 0; animation: f-rise-in 440ms var(--ease-out) 1240ms both; }
+.splash-skip { opacity: 0; animation: f-fade-in 300ms ease 1400ms forwards; }
+
+/* Entrada da tela de login */
+.login-enter > * { animation: f-rise-in 420ms var(--ease-out) backwards; }
+.login-enter > *:nth-child(2) { animation-delay: 80ms; }
+.login-enter > *:nth-child(3) { animation-delay: 160ms; }
+.login-enter > *:nth-child(4) { animation-delay: 240ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-logo .sp-stroke, .splash-logo .sp-f-outline { stroke-dashoffset: 0; }
+  .splash-logo .sp-paper, .splash-logo .sp-vert, .splash-word, .splash-slogan, .splash-skip { opacity: 1; }
+  .splash-logo .sp-f-mask { transform: none; }
+}
+html.reduce-motion .splash-logo .sp-stroke, html.reduce-motion .splash-logo .sp-f-outline { stroke-dashoffset: 0; }
+html.reduce-motion .splash-logo .sp-paper, html.reduce-motion .splash-logo .sp-vert, html.reduce-motion .splash-word, html.reduce-motion .splash-slogan, html.reduce-motion .splash-skip { opacity: 1; }
+html.reduce-motion .splash-logo .sp-f-mask { transform: none; }

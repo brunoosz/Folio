@@ -5,15 +5,16 @@ type EmptyStateProps = {
   title: string;
   description?: string;
   action?: ReactNode;
+  compact?: boolean;
 };
 
-export function EmptyState({ illustration, title, description, action }: EmptyStateProps) {
+export function EmptyState({ illustration, title, description, action, compact = false }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-      {illustration && <div className="mb-4">{illustration}</div>}
+    <div className={`stagger flex flex-col items-center justify-center ${compact ? 'py-8' : 'py-16'} px-6 text-center`}>
+      {illustration && <div className="mb-4 illo-float">{illustration}</div>}
       <h3 className="text-[17px] font-semibold text-ink mb-1">{title}</h3>
-      {description && <p className="text-[14px] text-ink-body max-w-[280px]">{description}</p>}
-      {action && <div className="mt-4">{action}</div>}
+      {description && <p className="text-[14px] text-ink-body max-w-[300px] leading-relaxed">{description}</p>}
+      {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }
