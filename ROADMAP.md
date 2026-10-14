@@ -5,7 +5,7 @@
 3. ~~Fase 2: Troca de exercício + Mapa muscular 2D~~
 4. ~~Fase 3: Rotina diária completa (hábitos, hidratação, sono)~~
 5. ~~Fase 4: Assistente IA (mock) + Biblioteca científica + Painel admin~~
-6. Fase 5: Histórico de progressão e gráficos
+6. ~~Fase 5: Histórico de progressão e gráficos~~
 7. Fase 6: Supabase real + autenticação + RLS
 8. Fase 7: Assistente IA com RAG e citações (requer Supabase)
 9. Fase 8: Ingestão de PDFs e busca semântica
