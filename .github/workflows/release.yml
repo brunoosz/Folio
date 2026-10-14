@@ -1,0 +1,143 @@
+name: Build e Release
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows (.exe)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci --legacy-peer-deps
+
+      - name: Checagem de tipos
+        run: npx tsc --noEmit
+
+      - name: Build web
+        run: npx vite build
+
+      - name: Empacotar instalador NSIS
+        run: npx electron-builder --win --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Folio-Windows
+          path: release/Folio-Setup-*.exe
+          if-no-files-found: error
+
+  android:
+    name: Android (.apk)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Capacitor 8 / Android Gradle Plugin exigem JDK 21.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Instalar dependências
+        run: npm ci --legacy-peer-deps
+
+      - name: Build web
+        run: npx vite build
+
+      - name: Sincronizar projeto Android
+        run: npx cap sync android
+
+      - name: Compilar APK (debug)
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Renomear APK
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk "out/Folio-${VERSION}.apk"
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Folio-Android
+          path: out/*.apk
+          if-no-files-found: error
+
+  release:
+    name: Publicar release
+    needs: [windows, android]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - run: ls -la artifacts
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Folio ${{ github.ref_name }}
+          files: |
+            artifacts/*.exe
+            artifacts/*.apk
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          body: |
+            ## Folio ${{ github.ref_name }} — Corpo, rotina e ciência
+
+            Caderno inteligente de saúde e treino.
+
+            ### Windows (`Folio-Setup-*.exe`)
+            1. Baixe o instalador abaixo e abra o arquivo.
+            2. Como o instalador ainda não é assinado digitalmente, o Windows pode exibir a tela azul do SmartScreen. Clique em **Mais informações → Executar assim mesmo**.
+            3. Siga o assistente de instalação. O Folio fica no Menu Iniciar e na Área de Trabalho.
+
+            ### Android (`Folio-*.apk`)
+            1. Baixe o APK no próprio celular.
+            2. Ao abrir, o Android pedirá para **permitir a instalação de apps de fontes desconhecidas** para o navegador ou gerenciador de arquivos. Autorize e toque em **Instalar**.
+            3. Se o Play Protect avisar, toque em **Instalar mesmo assim**.
+
+            ### Primeiro acesso
+            - Usuário: `admin` · Senha: `admin` (conta da dona/do dono do app, com acesso ao painel admin).
+            - Os dados ficam salvos apenas neste dispositivo nesta versão.
+
+            ### Assistente IA (Groq)
+            1. Crie uma chave gratuita em https://console.groq.com/keys.
+            2. No Folio, abra **Configurações**, cole a chave no campo da Groq e toque em **Salvar**.
+            3. A chave fica guardada só neste dispositivo.
+
+            > O Folio não faz diagnóstico nem prescrição. Os dados de exercícios estão marcados "a revisar por profissional". Procure um profissional de saúde ou de educação física.

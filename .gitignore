@@ -3,3 +3,7 @@ dist
 release
 *.local
 *.zip
+*.apk
+*.aab
+.DS_Store
+builder-debug.yml

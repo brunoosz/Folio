@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tokens da marca Folio -->
+    <color name="folio_canvas">#F6F5F4</color>
+    <color name="folio_ink">#111111</color>
+    <color name="folio_brand">#0075DE</color>
+    <color name="colorPrimary">#0075DE</color>
+    <color name="colorPrimaryDark">#F6F5F4</color>
+    <color name="colorAccent">#0075DE</color>
+</resources>
