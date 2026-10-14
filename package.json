@@ -1,6 +1,6 @@
 {
   "name": "folio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Folio — caderno inteligente de saúde e treino. Corpo, rotina e ciência.",
   "main": "electron/main.cjs",
   "scripts": {
