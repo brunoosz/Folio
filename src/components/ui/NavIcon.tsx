@@ -24,3 +24,21 @@ export function BodyIcon({ active = false }: { active?: boolean }) {
     </svg>
   );
 }
+
+export function RotinaIcon({ active = false }: { active?: boolean }) {
+  const c = active ? 'var(--color-brand)' : 'var(--color-ink-muted)';
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 8v4l3 3" /><circle cx="12" cy="12" r="9" />
+    </svg>
+  );
+}
+
+export function PerfilIcon({ active = false }: { active?: boolean }) {
+  const c = active ? 'var(--color-brand)' : 'var(--color-ink-muted)';
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
+    </svg>
+  );
+}

@@ -1,10 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, DumbbellIcon, BodyIcon } from './NavIcon';
+import { HomeIcon, DumbbellIcon, BodyIcon, RotinaIcon, PerfilIcon } from './NavIcon';
 
 const links = [
   { to: '/', label: 'Início', Icon: HomeIcon },
   { to: '/treino', label: 'Treino', Icon: DumbbellIcon },
+  { to: '/rotina', label: 'Rotina', Icon: RotinaIcon },
   { to: '/mapa', label: 'Mapa', Icon: BodyIcon },
+  { to: '/perfil', label: 'Perfil', Icon: PerfilIcon },
 ] as const;
 
 export function BottomNav() {
@@ -14,13 +16,13 @@ export function BottomNav() {
         <NavLink
           key={to}
           to={to}
-          className="flex flex-col items-center gap-0.5 min-w-[64px] min-h-[44px] justify-center"
+          className="flex flex-col items-center gap-0.5 min-w-[48px] min-h-[44px] justify-center"
         >
           {({ isActive }) => (
             <>
               <Icon active={isActive} />
               <span
-                className="text-[11px] font-medium"
+                className="text-[10px] font-medium"
                 style={{ color: isActive ? 'var(--color-brand)' : 'var(--color-ink-muted)' }}
               >
                 {label}
