@@ -199,6 +199,15 @@ export function Perfil() {
       />
       <LinkCard
         index={idx++}
+        icon="flask"
+        cor="var(--color-muscle)"
+        fundo="var(--color-tint-danger)"
+        titulo="Exames"
+        descricao="Sangue, urina e outros, com leitura da IA"
+        onClick={() => navigate('/exames')}
+      />
+      <LinkCard
+        index={idx++}
         icon="book"
         cor="var(--color-science)"
         fundo="var(--color-brand-ghost)"

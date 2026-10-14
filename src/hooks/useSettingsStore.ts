@@ -97,6 +97,10 @@ export function clearAllLocalData() {
     keys.forEach(k => localStorage.removeItem(k));
     sessionStorage.clear();
   } catch { /* ignore */ }
-  window.location.hash = '#/';
-  window.location.reload();
+  // Trechos da base de conhecimento (IndexedDB).
+  const recarregar = () => { window.location.hash = '#/'; window.location.reload(); };
+  try {
+    const req = indexedDB.deleteDatabase('folio_conhecimento');
+    req.onsuccess = req.onerror = req.onblocked = recarregar;
+  } catch { recarregar(); }
 }

@@ -394,3 +394,44 @@ Não calcule calorias, não prescreva, e lembre de confirmar trocas com a nutric
 Comido: ${comido.join('; ')}${contexto ? `\nContexto: ${contexto}` : ''}`;
   return groqChat(key, model, [{ role: 'system', content: sistema }, { role: 'user', content: usuario }], { maxTokens: 450, temperature: 0.3 });
 }
+
+/* ---------------- Exames ---------------- */
+
+const SYSTEM_EXAMES = `Você é o assistente de saúde do Folio e ajuda a pessoa a ENTENDER seus exames laboratoriais, em português do Brasil.
+Regras obrigatórias:
+- Nunca dê diagnóstico, nunca afirme doença e nunca indique remédio, dose ou suplemento.
+- Explique em linguagem simples o que cada item fora da faixa mede e causas comuns e benignas que costumam influenciar (jejum, hidratação, treino intenso, horário da coleta, ciclo menstrual etc.).
+- Lembre que faixas variam entre laboratórios e que só o médico interpreta junto com o histórico.
+- Se houver valores muito distantes da referência, recomende procurar o médico com prioridade, sem alarmismo.
+- Seja acolhedor, objetivo e use listas curtas com **negrito** nos nomes.`;
+
+export async function analisarExameIA(key: string, model: string, exameTexto: string, contexto: string, citacoes = ''): Promise<string> {
+  const usuario = `Exame:\n${exameTexto}${contexto ? `\n\nContexto da pessoa: ${contexto}` : ''}${citacoes ? `\n\nMateriais de apoio (cite só se forem relevantes):\n${citacoes}` : ''}
+
+Responda em até 220 palavras: 1) visão geral; 2) itens fora da faixa e o que podem significar de forma geral; 3) perguntas úteis para levar ao médico.`;
+  return groqChat(key, model, [{ role: 'system', content: SYSTEM_EXAMES }, { role: 'user', content: usuario }], { maxTokens: 900, temperature: 0.2 });
+}
+
+export interface ResultadoIA { nome: string; valor: number | null; valorTexto?: string; unidade: string; refMin?: number; refMax?: number; refTexto?: string }
+
+/** Organiza um laudo bagunçado em resultados (sem interpretar). */
+export async function estruturarExameIA(key: string, model: string, texto: string): Promise<ResultadoIA[]> {
+  const sistema = `Extraia os resultados do laudo abaixo em JSON, sem inventar nada e sem interpretar. Formato:
+{"resultados":[{"nome":"Hemoglobina","valor":14.2,"valorTexto":"","unidade":"g/dL","refMin":13.5,"refMax":17.5,"refTexto":""}]}
+Use ponto decimal. Se o resultado for textual (ex.: "Negativo"), use valor null e valorTexto. Omita campos de referência ausentes. Responda apenas com o JSON.`;
+  const resp = await groqChat(key, model, [{ role: 'system', content: sistema }, { role: 'user', content: texto.slice(0, 8000) }], { maxTokens: 2500, temperature: 0, json: true });
+  const dados = extrairJSON(resp) as { resultados?: unknown } | null;
+  const lista = Array.isArray(dados?.resultados) ? (dados!.resultados as Record<string, unknown>[]) : [];
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : typeof v === 'string' && v.trim() && Number.isFinite(Number(v.replace(',', '.'))) ? Number(v.replace(',', '.')) : undefined);
+  const out = lista.map(r => ({
+    nome: String(r.nome ?? '').slice(0, 60),
+    valor: num(r.valor) ?? null,
+    valorTexto: r.valorTexto ? String(r.valorTexto).slice(0, 40) : undefined,
+    unidade: String(r.unidade ?? '').slice(0, 20),
+    refMin: num(r.refMin),
+    refMax: num(r.refMax),
+    refTexto: r.refTexto ? String(r.refTexto).slice(0, 40) : undefined,
+  })).filter(r => r.nome && (r.valor != null || r.valorTexto)).slice(0, 80);
+  if (!out.length) throw new GroqError('unknown');
+  return out;
+}

@@ -66,6 +66,13 @@
 
 @layer components {
   .card-border { border: 1px solid rgba(0,0,0,0.08); }
+  /* Campo de formulário padrão (48px de altura, fundo canvas, foco em branco). */
+  .input {
+    min-height: 48px; padding: 10px 12px; font-size: 15px; color: var(--color-ink);
+    background: var(--color-canvas); border: 1px solid rgba(0,0,0,0.08); border-radius: var(--radius-btn);
+    transition: background-color 200ms ease, border-color 200ms ease; width: 100%; min-width: 0;
+  }
+  .input:focus { background: var(--color-surface); border-color: var(--color-brand); outline: none; }
 }
 
 .tracking-tight-title { letter-spacing: -0.02em; }
@@ -273,6 +280,7 @@ html[data-theme='escuro'] {
   --color-map-group: #8a4639;
 }
 html[data-theme='escuro'] .card-border { border-color: rgba(255,255,255,0.1); }
+html[data-theme='escuro'] .input { border-color: rgba(255,255,255,0.12); }
 html[data-theme='escuro'] .bg-black\/\[0\.03\] { background-color: rgba(255,255,255,0.04); }
 html[data-theme='escuro'] .bg-black\/\[0\.04\] { background-color: rgba(255,255,255,0.05); }
 html[data-theme='escuro'] .bg-black\/\[0\.05\] { background-color: rgba(255,255,255,0.07); }
