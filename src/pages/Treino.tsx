@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -174,6 +175,12 @@ function SortableExercicio({
             placeholder="Notas..."
             className="mt-2 w-full h-[36px] px-3 text-[13px] text-ink-body bg-canvas rounded-[var(--radius-btn)] card-border"
           />
+
+          <div className="flex gap-3 mt-2">
+            <Link to={`/troca/${item.id}`} className="text-[13px] text-brand font-medium min-h-[36px] flex items-center">
+              Trocar exercício
+            </Link>
+          </div>
         </div>
       </div>
     </div>

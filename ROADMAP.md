@@ -1,8 +1,8 @@
 # Roadmap — Folio
 
 1. ~~Fase 0: Fundação (tokens, componentes, splash, rotas, PWA)~~
-2. Fase 1: Home personalizável + Treino com drag-and-drop
-3. Fase 2: Troca de exercício + Mapa muscular 2D
+2. ~~Fase 1: Home personalizável + Treino com drag-and-drop~~
+3. ~~Fase 2: Troca de exercício + Mapa muscular 2D~~
 4. Fase 3: Rotina diária completa (hábitos, hidratação, sono)
 5. Fase 4: Supabase real + autenticação + RLS
 6. Fase 5: Histórico de progressão e gráficos

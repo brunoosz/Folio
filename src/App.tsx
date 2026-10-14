@@ -5,6 +5,7 @@ import { BottomNav } from './components/ui/BottomNav';
 import { Home } from './pages/Home';
 import { Treino } from './pages/Treino';
 import { Mapa } from './pages/Mapa';
+import { Troca } from './pages/Troca';
 
 export default function App() {
   const [ready, setReady] = useState(false);
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/treino" element={<Treino />} />
           <Route path="/mapa" element={<Mapa />} />
+          <Route path="/troca/:itemId" element={<Troca />} />
         </Routes>
         <BottomNav />
       </div>
