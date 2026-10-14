@@ -86,6 +86,28 @@ export function Perfil() {
         </div>
       </Card>
 
+      {/* Historico link */}
+      <Link to="/historico">
+        <Card>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-[36px] h-[36px] rounded-[var(--radius-btn)] bg-brand-ghost flex items-center justify-center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-muscle)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+              </div>
+              <div>
+                <span className="text-[14px] font-medium">Histórico de treinos</span>
+                <p className="text-[12px] text-ink-muted">Progressão de carga e volume</p>
+              </div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-ink-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </div>
+        </Card>
+      </Link>
+
       {/* Progress charts */}
       <Card>
         <h3 className="text-[15px] font-semibold mb-4">Progressão — 14 dias</h3>

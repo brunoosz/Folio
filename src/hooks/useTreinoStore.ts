@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { SessaoDodia, SessaoItem } from '../data/types';
 import { repo } from '../data/repository';
+import { useHistoricoStore } from './useHistoricoStore';
 
 interface TreinoState {
   sessao: SessaoDodia;
@@ -32,6 +33,10 @@ export const useTreinoStore = create<TreinoState>((set, get) => ({
     const sessao = { ...get().sessao, status: 'concluida' as const };
     repo.salvarSessao(sessao);
     set({ sessao, modoAtivo: false });
+
+    const fichas = repo.getFichas();
+    const ficha = fichas.find(f => f.id === sessao.fichaModeloId);
+    useHistoricoStore.getState().salvar(sessao, ficha?.nome ?? 'Treino');
   },
 
   toggleItem(itemId) {

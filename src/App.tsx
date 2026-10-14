@@ -11,6 +11,7 @@ import { Perfil } from './pages/Perfil';
 import { Assistente } from './pages/Assistente';
 import { Biblioteca } from './pages/Biblioteca';
 import { Admin } from './pages/Admin';
+import { Historico } from './pages/Historico';
 import { Login } from './pages/Login';
 import { useAuthStore, initAuth } from './hooks/useAuthStore';
 
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/assistente" element={<Assistente />} />
           <Route path="/biblioteca" element={<Biblioteca />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/historico" element={<Historico />} />
           <Route path="/perfil" element={<Perfil />} />
         </Routes>
         <BottomNav />
